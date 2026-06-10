@@ -13,6 +13,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
   const fgRef = useRef();
   const focusRef = useRef(focusId); // nodeThreeObject reads this synchronously
   focusRef.current = focusId;
+  const tweenUntilRef = useRef(0); // suppress idle drift while a camera tween is in flight
 
   // Build + normalize once per snapshot.
   const graph = useMemo(
@@ -21,15 +22,23 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
   );
 
   // Apply the render budget: keep the top-N by degree (sheds the weight-1 tail first).
+  // The visible links are fresh copies: react-force-graph mutates source/target in place (string
+  // id -> node object) after the first tick, so we must NOT let it alias graph.links, which the
+  // selectors (neighborsOf / entityStats) read by string id on every click.
   const visible = useMemo(() => {
     const nodes = topNByDegree(graph.nodes, graph.degree, budget);
     const keep = new Set(nodes.map((n) => n.id));
-    const links = graph.links.filter((l) => keep.has(l.source) && keep.has(l.target));
+    const links = graph.links
+      .filter((l) => keep.has(l.source) && keep.has(l.target))
+      .map((l) => ({ ...l }));
     return { nodes, links };
   }, [graph, budget]);
 
-  const maxCount = useMemo(() => Math.max(...graph.nodes.map((n) => n.count || 0), 1), [graph]);
-  const maxDegree = useMemo(() => Math.max(...Object.values(graph.degree), 1), [graph]);
+  const maxCount = useMemo(() => graph.nodes.reduce((m, n) => Math.max(m, n.count || 0), 1), [graph]);
+  const maxDegree = useMemo(
+    () => Object.values(graph.degree).reduce((m, d) => Math.max(m, d), 1),
+    [graph],
+  );
 
   // Lift the built graph (byId, degree, raw links) so the drawer can compute stats.
   useEffect(() => {
@@ -59,10 +68,10 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, strategy, maxCount, maxDegree, theme]);
 
-  // Weighted gold edges: faint lattice for weight-1, bright flare for strong ties.
+  // Weighted gold edges: faint lattice for weight-1, bright flare for strong ties (alpha scales
+  // with sqrt(weight), so w=1 sits at ~0.30 and the w=56 ties flare up to the 0.85 cap).
   const linkColor = (l) => {
     const w = l.weight ?? 1;
-    const strong = w >= 8;
     const alpha = Math.min(0.85, 0.18 + Math.sqrt(w) * 0.12);
     // honor focus dimming on edges too
     if (focusRef.current) {
@@ -71,7 +80,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
       const inFocus = s === focusRef.current || t === focusRef.current;
       if (!inFocus) return hexA(theme.palette.gold, 0.04);
     }
-    return hexA(strong ? theme.palette.gold : theme.palette.gold, alpha);
+    return hexA(theme.palette.gold, alpha);
   };
   const linkWidth = (l) => Math.min(2.6, 0.3 + Math.sqrt(l.weight ?? 1) * 0.35);
 
@@ -90,7 +99,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
     const tick = () => {
       const t = performance.now() - start;
       update(t);
-      if (theme.motion.idleDrift && !focusRef.current) {
+      if (theme.motion.idleDrift && !focusRef.current && performance.now() >= tweenUntilRef.current) {
         // slow idle "breath": rotate the camera orbit very gently
         const cam = fg.camera();
         const a = theme.motion.idleDrift;
@@ -115,6 +124,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
     const dist = 120;
     const r = Math.hypot(node.x || 0, node.y || 0, node.z || 0) || 1;
     const ratio = 1 + dist / r;
+    tweenUntilRef.current = performance.now() + theme.motion.cameraTweenMs;
     fgRef.current?.cameraPosition(
       { x: (node.x || 0) * ratio, y: (node.y || 0) * ratio, z: (node.z || 0) * ratio },
       node,
