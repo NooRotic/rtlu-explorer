@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RTLU Explorer — 3 Visual Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&family=Anton&family=Pirata+One&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#e9e7e0; --mute:#8d8a82; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ background:#050505; color:var(--ink); font-family:Inter,system-ui,sans-serif; line-height:1.5; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:40px 28px 90px; }
+  .page-h{ border-bottom:1px solid #222; padding-bottom:22px; margin-bottom:8px; }
+  .page-h h1{ font-family:'Space Grotesk',sans-serif; font-size:26px; letter-spacing:-.5px; font-weight:700; }
+  .page-h p{ color:var(--mute); font-size:14.5px; margin-top:8px; max-width:760px; }
+  .kbd{ font-family:'Space Mono',monospace; font-size:12px; background:#161616; border:1px solid #2a2a2a; border-radius:5px; padding:2px 7px; color:#d8d5cd; }
+
+  .dir{ margin-top:38px; border:1px solid var(--line,#222); border-radius:14px; overflow:hidden; background:var(--card,#0b0b0b); transition:transform .15s, box-shadow .15s, border-color .15s; cursor:pointer; }
+  .dir:hover{ transform:translateY(-2px); border-color:var(--accent,#444); }
+  .dir.selected{ border-color:var(--accent,#888); box-shadow:0 0 0 2px var(--accent,#888), 0 18px 50px rgba(0,0,0,.6); }
+  .dir-head{ display:flex; align-items:baseline; gap:14px; padding:18px 22px 12px; flex-wrap:wrap; }
+  .dir-n{ font-family:'Space Mono',monospace; font-size:12px; color:var(--accent); border:1px solid var(--accent); border-radius:50%; width:26px; height:26px; display:grid; place-items:center; flex:0 0 auto; }
+  .dir-title{ font-size:21px; font-weight:700; letter-spacing:-.3px; }
+  .dir-tag{ color:var(--mute); font-size:13.5px; font-style:italic; }
+  .pickhint{ margin-left:auto; font-size:11px; color:var(--mute); font-family:'Space Mono',monospace; }
+
+  /* galaxy band */
+  .band{ position:relative; height:230px; overflow:hidden; border-top:1px solid #1c1c1c; border-bottom:1px solid #1c1c1c; }
+  .band svg{ position:absolute; inset:0; width:100%; height:100%; }
+  .node{ position:absolute; transform:translate(-50%,-50%); border-radius:50%; }
+  .sun-label{ position:absolute; transform:translate(-50%,-50%); font-size:10.5px; white-space:nowrap; pointer-events:none; font-weight:600; }
+
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:0; }
+  @media(max-width:760px){ .cols{ grid-template-columns:1fr; } }
+  .pane{ padding:18px 22px; }
+  .pane + .pane{ border-left:1px solid #1c1c1c; }
+  @media(max-width:760px){ .pane + .pane{ border-left:0; border-top:1px solid #1c1c1c; } }
+  .lab{ font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:var(--mute); margin-bottom:10px; }
+
+  .sw{ display:flex; gap:7px; margin-bottom:14px; flex-wrap:wrap; }
+  .sw span{ width:34px; height:34px; border-radius:7px; border:1px solid rgba(255,255,255,.12); position:relative; }
+  .sw span::after{ content:attr(data-hex); position:absolute; bottom:-15px; left:0; font-size:8px; font-family:'Space Mono',monospace; color:var(--mute); }
+
+  .specimen{ margin:6px 0 4px; }
+  .meta{ font-size:13px; color:#bdbab2; }
+  .meta b{ color:var(--ink); font-weight:600; }
+  .notes{ list-style:none; font-size:12.7px; }
+  .notes li{ padding:4px 0; border-top:1px dashed #232323; color:#bdbab2; display:flex; gap:8px; }
+  .notes li:first-child{ border-top:0; }
+  .notes .k{ flex:0 0 96px; color:var(--mute); font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; padding-top:1px; }
+  .head-rate{ font-weight:700; }
+  .hi{ color:#7CFFB2; } .mid{ color:#FFD66B; } .lo{ color:#FF8C6B; }
+
+  .rec{ margin-top:40px; border:1px solid #2a2a20; background:linear-gradient(180deg,#0e0e09,#0a0a0a); border-radius:14px; padding:24px 26px; }
+  .rec h2{ font-family:'Space Grotesk',sans-serif; font-size:18px; margin-bottom:6px; }
+  .rec .pill{ display:inline-block; font-family:'Space Mono',monospace; font-size:11px; color:#E8B306; border:1px solid #5a4d12; background:#181405; border-radius:20px; padding:3px 11px; margin-bottom:12px; }
+  .rec p{ font-size:14px; color:#cdcabf; margin-bottom:10px; max-width:880px; }
+  .rec b{ color:#fff; }
+  .foot{ margin-top:26px; color:var(--mute); font-size:13px; border-top:1px solid #222; padding-top:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-h">
+    <h1>Three ways to build the Wu-Tang universe</h1>
+    <p>All-in Wu, structural encoding (size = times referenced, glow/ring = connections, edges = co-occurrence weight, color = community — no fabricated types). Same data, same engine, three skins. Each band below renders ~9 suns + a dust-field, the real shape of the snapshot. Scan them, then tell me a number — or click a card to mark it.</p>
+  </div>
+
+  <!-- ===== D1 CINEMATIC ===== -->
+  <div class="dir" data-choice="1" data-theme="cine" onclick="pick(this)"
+       style="--accent:#E8B306; --card:#070604; --line:#241d09;">
+    <div class="dir-head">
+      <span class="dir-n">1</span>
+      <span class="dir-title" style="font-family:'Cinzel',serif; letter-spacing:.5px;">Shaolin, After Dark</span>
+      <span class="dir-tag">Shaw Brothers 35mm — incense haze, tungsten gold, lanterns in the void</span>
+      <span class="pickhint">click to pick ▶</span>
+    </div>
+    <div class="band" data-band="cine"></div>
+    <div class="cols">
+      <div class="pane">
+        <div class="lab">Palette · warm monochrome</div>
+        <div class="sw">
+          <span data-hex="#0A0805" style="background:#0A0805"></span>
+          <span data-hex="#E8B306" style="background:#E8B306"></span>
+          <span data-hex="#C2570F" style="background:#C2570F"></span>
+          <span data-hex="#1F6E5B" style="background:#1F6E5B"></span>
+          <span data-hex="#EFE6CE" style="background:#EFE6CE"></span>
+        </div>
+        <div class="lab" style="margin-top:18px;">Type · cinematic serif</div>
+        <div class="specimen" style="font-family:'Cinzel',serif; font-size:25px; color:#E8B306;">THE 36 CHAMBERS</div>
+        <div class="meta" style="margin-top:4px; font-family:'Cinzel',serif; font-size:13px; color:#cdb98a;">Display: Cinzel · Body: Inter · numbers carry weight</div>
+      </div>
+      <div class="pane">
+        <div class="lab">Feel &amp; tradeoffs</div>
+        <div class="meta" style="margin-bottom:10px;"><b>Mood:</b> a temple courtyard at night. Suns glow like braziers with bloom + lens flare; dust are embers; depth-fog rolls. Camera <b>breathes</b> — slow idle dolly, film-close-up push on select. Drawer = a letterboxed film dossier.</div>
+        <ul class="notes">
+          <li><span class="k">Wins</span><span>Most visceral, emotional "wow"; nails Wu's kung-fu-cinema obsession.</span></li>
+          <li><span class="k">Risk</span><span>Heavy bloom can smear into a glow-blob at 2,559 nodes — perf + legibility cost. Warm-monochrome.</span></li>
+          <li><span class="k">Portability</span><span>Engine ports; gold + Shaw-grain is Wu-specific theme.</span></li>
+          <li><span class="k">Type-color</span><span class="head-rate mid">MEDIUM headroom</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== D2 MATHEMATICS ===== -->
+  <div class="dir" data-choice="2" data-theme="math" onclick="pick(this)"
+       style="--accent:#7FE8FF; --card:#05070d; --line:#0e2030;">
+    <div class="dir-head">
+      <span class="dir-n">2</span>
+      <span class="dir-title" style="font-family:'Space Grotesk',sans-serif;">Supreme Mathematics</span>
+      <span class="dir-tag">Five-Percenter star-chart — a luminous blueprint of the cipher</span>
+      <span class="pickhint">click to pick ▶</span>
+    </div>
+    <div class="band" data-band="math"></div>
+    <div class="cols">
+      <div class="pane">
+        <div class="lab">Palette · cool base, gold reserved for the 9</div>
+        <div class="sw">
+          <span data-hex="#070912" style="background:#070912"></span>
+          <span data-hex="#7FE8FF" style="background:#7FE8FF"></span>
+          <span data-hex="#3A6EA5" style="background:#3A6EA5"></span>
+          <span data-hex="#E8B306" style="background:#E8B306"></span>
+          <span data-hex="#E7EEF6" style="background:#E7EEF6"></span>
+        </div>
+        <div class="lab" style="margin-top:18px;">Type · geometric + mono numerals</div>
+        <div class="specimen" style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:25px; color:#E7EEF6;">7th Chamber <span style="font-family:'Space Mono',monospace; color:#7FE8FF; font-size:18px;">· deg 294</span></div>
+        <div class="meta" style="margin-top:4px; font-size:13px; color:#88a7c0;">Display: Space Grotesk · Data: Space Mono · numbers first-class</div>
+      </div>
+      <div class="pane">
+        <div class="lab">Feel &amp; tradeoffs</div>
+        <div class="meta" style="margin-bottom:10px;"><b>Mood:</b> an observatory instrument. Crisp constellation lines, geometric rings (octagons = 8 Diagrams), gold crowns on the 9 suns only. Camera snaps to clean angles — you <b>operate</b> it. Drawer = a "lesson card" of Supreme-Math stats.</div>
+        <ul class="notes">
+          <li><span class="k">Wins</span><span>Crisp lines read best at 2,559 nodes; deeply Wu (5%-er); most research-grade.</span></li>
+          <li><span class="k">Risk</span><span>Cooler, more cerebral — less instant-visceral than #1.</span></li>
+          <li><span class="k">Portability</span><span>Most portable — swap accent hue + geometry motif per artist.</span></li>
+          <li><span class="k">Type-color</span><span class="head-rate hi">HIGH headroom</span> — whole hue channel free for Phase-2.5 types</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== D3 GRIT ===== -->
+  <div class="dir" data-choice="3" data-theme="grit" onclick="pick(this)"
+       style="--accent:#FCB711; --card:#080808; --line:#2a2207;">
+    <div class="dir-head">
+      <span class="dir-n">3</span>
+      <span class="dir-title" style="font-family:'Anton',sans-serif; letter-spacing:.5px; text-transform:uppercase;">Tape Grit</span>
+      <span class="dir-tag">90s NYC boom-bap — xerox halftone, spray stencil, black &amp; chrome-yellow</span>
+      <span class="pickhint">click to pick ▶</span>
+    </div>
+    <div class="band" data-band="grit"></div>
+    <div class="cols">
+      <div class="pane">
+        <div class="lab">Palette · 2-color brutalist + blood accent</div>
+        <div class="sw">
+          <span data-hex="#000000" style="background:#000000"></span>
+          <span data-hex="#FCB711" style="background:#FCB711"></span>
+          <span data-hex="#E8E2D0" style="background:#E8E2D0"></span>
+          <span data-hex="#B11313" style="background:#B11313"></span>
+        </div>
+        <div class="lab" style="margin-top:18px;">Type · loud display is the design</div>
+        <div class="specimen" style="font-family:'Pirata One',cursive; font-size:30px; color:#FCB711; line-height:1;">Wu-Tang Forever</div>
+        <div class="meta" style="margin-top:6px; font-family:'Anton',sans-serif; font-size:18px; letter-spacing:1px; color:#E8E2D0;">PROTECT YA NECK</div>
+        <div class="meta" style="margin-top:4px; font-size:13px; color:#9a958a;">Blackletter (Pirata One) + condensed (Anton) + mono</div>
+      </div>
+      <div class="pane">
+        <div class="lab">Feel &amp; tradeoffs</div>
+        <div class="meta" style="margin-bottom:10px;"><b>Mood:</b> flipping a crate of tapes. Flat stamped medallions, not glowing orbs; bold poster strokes; halftone grain; snappy <b>cut</b> transitions with tape-wobble. Drawer = a cassette J-card.</div>
+        <ul class="notes">
+          <li><span class="k">Wins</span><span>Unmistakably Wu (black/yellow = THE signal); reads great small → big for mobile trailer + OG share cards.</span></li>
+          <li><span class="k">Risk</span><span>Flat/graphic fights the 3D-galaxy premise — orbs want depth + glow; could read as floating stickers.</span></li>
+          <li><span class="k">Portability</span><span>Most Wu-logo-coded; each artist needs its own 2-color identity.</span></li>
+          <li><span class="k">Type-color</span><span class="head-rate lo">LOW hue headroom</span> — encode types by shape/stamp, not color</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RECOMMENDATION ===== -->
+  <div class="rec">
+    <span class="pill">MY RECOMMENDATION</span>
+    <h2>#2 Supreme Mathematics as the backbone — with #1's gold-glow on the 9 suns</h2>
+    <p>The premise is a <b>3D galaxy of 2,559 nodes</b>, and three forces point the same way: crisp blueprint lines stay <b>legible at that scale</b> where heavy bloom smears; #2 reserves a <b>whole hue channel</b> for Phase-2.5 type-color (the rework conversation we just had); and the Five-Percenter frame is <b>peak Wu</b> without leaning on the logo.</p>
+    <p>But #2 alone risks reading cold. So I'd <b>graft #1's cinema onto the hubs only</b>: the 9 emcee-suns get gold crowns + a breathing bloom (the emotional wow), while the dust-field stays crisp blueprint points (the legibility + the headroom). #3's loud type and flat boldness aren't wasted either — they're the <b>right system for the mobile trailer and the OG/share cards</b> in Phases 3–4, where flat reads better small. So #3 can become the "2D companion skin," not the 3D loser.</p>
+    <p style="color:#9a958a; font-size:13px;">This is a recommendation, not a decision. Pick the one your gut wants — including "straight #1, no compromise" or "go fully #3." Your taste outranks my logic here.</p>
+  </div>
+
+  <div class="foot">Respond in the terminal with <span class="kbd">1</span>, <span class="kbd">2</span>, <span class="kbd">3</span>, or a blend — or click a card above. Then we lock the direction and write the design doc (still no viz code until you sign off).</div>
+</div>
+
+<script>
+  // Real Wu suns (name, relative size from count/degree). Positions hand-spread.
+  const SUNS = [
+    {n:'Method Man', x:24, y:46, r:30}, {n:'RZA', x:43, y:30, r:27},
+    {n:'Raekwon', x:60, y:52, r:26}, {n:'Wu-Tang Clan', x:38, y:66, r:29},
+    {n:'Ghostface', x:74, y:38, r:22}, {n:'Inspectah Deck', x:15, y:72, r:21},
+    {n:'GZA', x:84, y:64, r:18}, {n:'ODB', x:55, y:78, r:17}, {n:'U-God', x:70, y:74, r:16}
+  ];
+  const THEME = {
+    cine: { sun:'#E8B306', sun2:'#C2570F', dust:'#C2570F', edge:'rgba(232,179,6,.22)', glow:true, ring:false, flat:false, label:'#efdca0', dustN:80 },
+    math: { sun:'#E8B306', sun2:'#7FE8FF', dust:'#9fb8d0', edge:'rgba(127,232,255,.30)', glow:false, ring:true, flat:false, label:'#bcdcef', dustN:90 },
+    grit: { sun:'#FCB711', sun2:'#000', dust:'#FCB711', edge:'rgba(252,183,17,.5)', glow:false, ring:false, flat:true, label:'#000', dustN:60 }
+  };
+  function rnd(s){ return (Math.sin(s*99.13)*43758.5453)%1; } // deterministic scatter
+  function build(band){
+    const key = band.getAttribute('data-band'); const t = THEME[key];
+    const W = band.clientWidth, H = band.clientHeight;
+    const svgNS='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(svgNS,'svg'); band.appendChild(svg);
+    // edges between nearby suns
+    for(let i=0;i<SUNS.length;i++) for(let j=i+1;j<SUNS.length;j++){
+      const a=SUNS[i],b=SUNS[j]; const d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<32){ const l=document.createElementNS(svgNS,'line');
+        l.setAttribute('x1',a.x+'%');l.setAttribute('y1',a.y+'%');l.setAttribute('x2',b.x+'%');l.setAttribute('y2',b.y+'%');
+        l.setAttribute('stroke',t.edge); l.setAttribute('stroke-width', d<22?2.2:1); svg.appendChild(l); } }
+    // dust
+    for(let k=0;k<t.dustN;k++){
+      const x=Math.abs(rnd(k+1))*100, y=Math.abs(rnd(k+7.7))*100, sz=1+Math.abs(rnd(k+3.3))*2.5;
+      const dn=document.createElement('div'); dn.className='node';
+      dn.style.left=x+'%'; dn.style.top=y+'%'; dn.style.width=sz+'px'; dn.style.height=sz+'px';
+      dn.style.background=t.dust; dn.style.opacity=.35+Math.abs(rnd(k+5))*.4;
+      if(t.glow) dn.style.boxShadow='0 0 '+(sz*2)+'px '+t.dust;
+      if(t.flat){ dn.style.borderRadius=Math.abs(rnd(k))>.5?'1px':'50%'; }
+      band.appendChild(dn);
+    }
+    // suns
+    SUNS.forEach((s,i)=>{
+      const el=document.createElement('div'); el.className='node';
+      el.style.left=s.x+'%'; el.style.top=s.y+'%'; el.style.width=s.r+'px'; el.style.height=s.r+'px';
+      if(t.flat){ el.style.background=t.sun; el.style.border='2px solid #000'; }
+      else if(t.glow){ el.style.background='radial-gradient(circle at 38% 34%,#fff,'+t.sun+' 55%,'+t.sun2+')'; el.style.boxShadow='0 0 '+(s.r*1.3)+'px '+t.sun+', 0 0 '+(s.r*2.4)+'px '+t.sun2; }
+      else { el.style.background='radial-gradient(circle at 40% 36%,#fff,'+t.sun+')'; el.style.boxShadow='0 0 '+(s.r*0.7)+'px '+t.sun; }
+      band.appendChild(el);
+      if(t.ring){ const rg=document.createElement('div'); rg.className='node';
+        rg.style.left=s.x+'%'; rg.style.top=s.y+'%'; rg.style.width=(s.r+12)+'px'; rg.style.height=(s.r+12)+'px';
+        rg.style.border='1px solid '+t.sun2; rg.style.opacity=.6; band.appendChild(rg); }
+      if(s.r>=21){ const lb=document.createElement('div'); lb.className='sun-label';
+        lb.textContent=s.n; lb.style.left=s.x+'%'; lb.style.top=(s.y - (s.r/2/H*100) - 5)+'%';
+        lb.style.color=t.flat?t.sun:t.label;
+        if(t.flat){ lb.style.fontFamily="'Anton',sans-serif"; lb.style.letterSpacing='.5px'; lb.style.textTransform='uppercase'; }
+        if(key==='cine') lb.style.fontFamily="'Cinzel',serif";
+        band.appendChild(lb); }
+    });
+    // band background tint
+    if(key==='cine') band.style.background='radial-gradient(120% 90% at 40% 30%, #1a1206 0%, #0a0805 55%, #050402 100%)';
+    if(key==='math') band.style.background='radial-gradient(120% 100% at 50% 40%, #0a1322 0%, #070912 60%, #04060d 100%)';
+    if(key==='grit') band.style.background='repeating-linear-gradient(45deg,#0a0a0a,#0a0a0a 6px,#0c0c0c 6px,#0c0c0c 12px)';
+  }
+  function render(){ document.querySelectorAll('.band').forEach(b=>{ b.querySelectorAll('.node,.sun-label,svg').forEach(n=>n.remove()); build(b); }); }
+  window.addEventListener('load', ()=>setTimeout(render,120));
+  window.addEventListener('resize', ()=>{ clearTimeout(window._rt); window._rt=setTimeout(render,150); });
+
+  function pick(card){
+    document.querySelectorAll('.dir').forEach(d=>d.classList.remove('selected'));
+    card.classList.add('selected');
+    const choice=card.getAttribute('data-choice');
+    // best-effort: notify companion helper if present
+    try{ if(window.toggleSelect) {/* frame helper */} }catch(e){}
+    try{ fetch('/select',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'click',choice:choice,text:'Direction '+choice})}); }catch(e){}
+  }
+</script>
+</body>
+</html>
