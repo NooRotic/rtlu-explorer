@@ -1,0 +1,29 @@
+{
+  "bank_id": "artist_wu-tang-clan",
+  "total_nodes": 4707,
+  "total_links": 101609,
+  "total_documents": 1454,
+  "total_observations": 938,
+  "nodes_by_fact_type": {
+    "experience": 202,
+    "observation": 938,
+    "world": 3567
+  },
+  "links_by_link_type": {
+    "caused_by": 270,
+    "semantic": 44173,
+    "temporal": 54356,
+    "entity": 2810
+  },
+  "links_by_fact_type": {},
+  "pending_operations": 0,
+  "failed_operations": 0,
+  "operations_by_status": {
+    "completed": 5936,
+    "cancelled": 19,
+    "processing": 9
+  },
+  "pending_consolidation": 2653,
+  "failed_consolidation": 0,
+  "last_consolidated_at": "2026-04-10T22:04:54.968769+00:00"
+}

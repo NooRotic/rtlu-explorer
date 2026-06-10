@@ -1,0 +1,84 @@
+:root {
+  --bg: #0a0a0f;
+  --panel: #14141c;
+  --ink: #ece9f0;
+  --muted: #8a869a;
+  --accent: #ffd700;
+  --line: #262433;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 800px at 70% -10%, #1a1726 0%, var(--bg) 60%);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 8vh 24px 64px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  letter-spacing: -0.02em;
+}
+
+.kicker { color: var(--accent); margin: 4px 0 0; font-weight: 600; letter-spacing: 0.04em; }
+
+.lede { font-size: 1.15rem; line-height: 1.6; color: #cdc9da; margin: 2.5rem 0; }
+
+.stats { display: flex; gap: 16px; flex-wrap: wrap; margin: 2rem 0 3rem; }
+.stat {
+  flex: 1 1 140px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+}
+.stat-n { display: block; font-size: 2rem; font-weight: 700; }
+.stat-label { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 2.5rem 0 1rem; }
+
+.entity-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  counter-reset: rank;
+}
+.entity-grid li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.entity-name { font-weight: 600; }
+.entity-count { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.phase-note {
+  margin: 3rem 0 0;
+  padding: 18px 20px;
+  border-left: 3px solid var(--accent);
+  background: rgba(255, 215, 0, 0.06);
+  border-radius: 0 10px 10px 0;
+  line-height: 1.55;
+  color: #d8d4e4;
+}
+
+footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
+
+.muted { color: var(--muted); }
+.error { color: #ff6b6b; }
+code { background: #1d1b28; padding: 2px 6px; border-radius: 5px; font-size: 0.85em; }
