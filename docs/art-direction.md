@@ -128,9 +128,19 @@ The graph is a **genuine force-directed web** — every edge is a real `{source,
 
 1. **Anchors.** The ten suns give the eye fixed landmarks — the web reads as "ten dense cores with filaments," not uniform noise.
 2. **Edge value-hierarchy.** Faint lattice for weight-1, bright flares for strong ties — the *meaningful* structure pops, noise recedes.
-3. **Default focused view + drill-in (control-panel behavior).** First paint is the hubs + their neighborhoods, with a **"show everything" toggle**. Clicking a node **isolates its local web** (rest fades), tweens the camera in, and fills the drawer with its edges. This is the "explore the connections properly" interaction.
+3. **Default focused view + drill-in (control-panel behavior).** First paint is the hubs + their neighborhoods, with the **node-budget slider** (below) governing how many render. Clicking a node **isolates its local web** (rest fades), tweens the camera in, and fills the drawer with its edges. This is the "explore the connections properly" interaction.
 4. **Island handling.** The 144 unlinked entities are a deliberate outer field / toggle.
-5. **Perf levers** against the open 60fps target: degree/weight thresholds for the default view, opacity-by-weight, and capping live edge counts. (See *Open items*.)
+5. **Perf levers** against the open 60fps target: the node-budget slider, opacity-by-weight, and capping live edge counts. (See *Open items*.)
+
+### Node-budget slider (user-configurable render limit)
+
+Hardware varies wildly, so rather than hard-code one node count for everyone, the engine exposes a **render-budget slider** — the user's own lever on the fidelity/performance tradeoff:
+
+- **What it controls:** the number of nodes drawn, selected as the **top-N by degree**, so the slider always keeps the most-connected, most-meaningful nodes and sheds the weight-1 long tail first. The web degrades *gracefully* — low budget = "the core Clan structure," high budget = "the whole universe down to one-off references" — never a randomly shredded graph.
+- **Range:** a conservative default (≈300–500, tuned to a median machine) up to the full snapshot (2,559), and headroom beyond 1,000+ as multi-artist universes grow. Labeled stops (e.g. 250 / 500 / 1,000 / All).
+- **Adaptive assist (optional):** a small live FPS readout; if frame rate holds comfortably above target the UI nudges the user to raise the budget, if it dips it suggests lowering — tune by feel, not guesswork. A quick capability probe can seed the initial default.
+- **Persistence:** remembered in `localStorage`, so a power user's "max it out" sticks across visits.
+- **Layer:** engine-level and **artist-agnostic** — lives in the engine, not the Wu theme.
 
 ---
 
@@ -167,8 +177,8 @@ When the bank can emit entity types (people / places / themes / wordplay / alias
 
 ## Open items (decide during/early in implementation)
 
-- **Performance budget:** confirm a hard target (design doc proposes ~60fps at 500 visible nodes on a 5-year-old MacBook) and the default-view node/edge thresholds that hit it.
-- **Default focused view:** exact rule — top-N hubs by degree + their first-degree neighbors? what N?
+- **Performance budget:** confirm a hard target (design doc proposes ~60fps at 500 visible nodes on a 5-year-old MacBook) — this becomes the slider's *default* position, not a hard cap.
+- **Node-budget slider:** default position + range + labeled stops; whether the adaptive-FPS assist + capability probe ship in v1 or defer to polish; how the slider composes with click-to-isolate drill-in.
 - **Island treatment:** peripheral halo vs. off-by-default toggle.
 - **Codename → real name:** "Shaolin Observatory" is a working title; the site name is still open (candidates include *The Cipher*, *Cipher Atlas*).
 - **Nebula motion:** final drift speed/intensity in the live build.
