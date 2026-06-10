@@ -45,6 +45,8 @@ registerStrategy('structural', (node, ctx) => {
 
 // --- community (second lens) ------------------------------------------------
 // Deterministic hue per orbit id via a hashed HSL. Suns keep gold so anchors stay legible.
+// NOTE: this lens encodes cluster *membership* (hue), not magnitude — so suns render at a flat
+// size here (count-based sizing is the structural lens's job). Intentional, not a regression.
 registerStrategy('community', (node, ctx) => {
   const { palette } = ctx.theme;
   if (node.tier !== 'dust') {
