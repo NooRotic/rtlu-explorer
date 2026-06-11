@@ -24,11 +24,16 @@ export default function SearchBox({ graph, onPick }) {
         }}
       />
       {q.trim() && (
-        <ul style={{
-          listStyle: 'none', margin: '6px 0 0', padding: 4, position: 'absolute', bottom: '100%',
-          left: 0, right: 0, marginBottom: 6, maxHeight: 260, overflowY: 'auto',
-          background: 'rgba(7,9,18,0.97)', border: `1px solid ${hexA(palette.gold, 0.25)}`, borderRadius: 8,
-        }}>
+        <ul
+          // Keep focus on the input when a result is clicked: mousedown would otherwise blur the
+          // input first, collapsing the dock before onClick fires and dropping the pick.
+          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            listStyle: 'none', margin: '6px 0 0', padding: 4, position: 'absolute', bottom: '100%',
+            left: 0, right: 0, marginBottom: 6, maxHeight: 260, overflowY: 'auto',
+            background: 'rgba(7,9,18,0.97)', border: `1px solid ${hexA(palette.gold, 0.25)}`, borderRadius: 8,
+          }}
+        >
           {results.length === 0 && (
             <li style={{ padding: '8px 10px', color: palette.mute, fontFamily: typography.body, fontSize: 12 }}>
               {copy.search.empty}

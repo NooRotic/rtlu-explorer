@@ -1,5 +1,5 @@
 // src/ui/WuDock.jsx
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import WuCoin from './WuCoin.jsx';
 import SearchBox from './SearchBox.jsx';
@@ -12,8 +12,12 @@ export default function WuDock({ graph, roster, onSelect }) {
   const [open, setOpen] = useState(false);      // dock expanded (search visible)
   const [searchFocused, setSearchFocused] = useState(false);
 
+  // Resolve the roster to nodes once per graph (not on every hover-driven re-render).
+  const members = useMemo(
+    () => (graph ? roster.map((name) => byName(graph, name)).filter(Boolean) : []),
+    [graph, roster],
+  );
   if (!graph) return null;
-  const members = roster.map((name) => byName(graph, name)).filter(Boolean);
 
   // Dock magnification: neighbors of the hovered coin scale partially.
   const scaleFor = (i) => {
@@ -45,7 +49,10 @@ export default function WuDock({ graph, roster, onSelect }) {
         ))}
       </div>
       <div style={{
-        width: 240, overflow: 'hidden',
+        width: 240,
+        // hidden while collapsed (clips the breathe animation); visible when open so the search
+        // results dropdown — which opens UPWARD (bottom:100%) — isn't clipped away.
+        overflow: open ? 'visible' : 'hidden',
         maxHeight: open ? 48 : 0, opacity: open ? 1 : 0,
         transition: 'max-height 200ms ease, opacity 200ms ease',
       }}>
