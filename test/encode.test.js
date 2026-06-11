@@ -51,3 +51,33 @@ describe('encode registry', () => {
     expect(r.color).toBe('#123456');
   });
 });
+
+describe('encode highlight states', () => {
+  it('white-hots and enlarges connected DUST in a hover set', () => {
+    const hoverSet = new Set(['dust']);
+    const base = encode({ id: 'dust', tier: 'dust', count: 2 }, CTX());
+    const hot = encode({ id: 'dust', tier: 'dust', count: 2 }, CTX({ hoverSet }));
+    expect(hot.color).toBe(wuTangTheme.palette.whiteHot);
+    expect(hot.size).toBeGreaterThan(base.size);
+    expect(hot.opacity).toBe(1);
+  });
+
+  it('keeps suns gold (not white) when highlighted — no white blob', () => {
+    const focusSet = new Set(['meth']);
+    const hot = encode({ id: 'meth', tier: 'sun', count: 416 }, CTX({ focusSet }));
+    expect(hot.color).toBe(wuTangTheme.palette.gold);
+    expect(hot.opacity).toBe(1);
+  });
+
+  it('still dims nodes outside an active focus set', () => {
+    const focusSet = new Set(['meth']);
+    const out = encode({ id: 'dust', tier: 'dust', count: 2 }, CTX({ focusSet }));
+    expect(out.opacity).toBeLessThan(0.5);
+  });
+
+  it('hover highlight does not dim non-hovered nodes when nothing is selected', () => {
+    const hoverSet = new Set(['x']);
+    const other = encode({ id: 'dust', tier: 'dust', count: 2 }, CTX({ hoverSet }));
+    expect(other.opacity).toBeGreaterThan(0.5); // unchanged, not dimmed
+  });
+});
