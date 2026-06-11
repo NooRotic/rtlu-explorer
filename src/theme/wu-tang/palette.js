@@ -10,4 +10,8 @@ export const palette = {
   goldPale: '#FFE9A8', // sun core mid-stop
   ink: '#E9E7E0',      // default UI text on the void
   mute: '#8B96A3',     // secondary UI text
+  subtle: '#C7CDD4',     // brighter than mute — subtitle/secondary text with real contrast
+  silver: '#C8CDD2',     // brushed-metal dock face
+  silverEdge: '#5A6470', // dock border / bevel
+  coinInk: '#0A0C12',    // coin background (near-black, sits on silver)
 };

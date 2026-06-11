@@ -69,3 +69,7 @@ artist snapshot or visualization change.
 ## License
 
 MIT © NooRotic
+
+## Disclaimer
+
+This is an **unofficial fan tribute** and is **not affiliated with, authorized, or endorsed by Wu-Tang Clan** or its members. The Wu-Tang name and "W" mark are trademarks of their respective owners and are used here for identification in a noncommercial, transformative work. The site contains no song lyrics — only entity names, reference counts, and co-occurrence weights derived from a private analysis pipeline.

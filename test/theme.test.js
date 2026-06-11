@@ -31,4 +31,21 @@ describe('wuTangTheme contract', () => {
     expect(Array.isArray(wuTangTheme.nebula.layers)).toBe(true);
     expect(wuTangTheme.nebula.layers.length).toBeGreaterThan(0);
   });
+
+  it('exposes silver dock tokens and a brighter subtitle token', () => {
+    const p = wuTangTheme.palette;
+    expect(p.silver).toMatch(/^#/);
+    expect(p.silverEdge).toMatch(/^#/);
+    expect(p.coinInk).toMatch(/^#/);   // coin background (near-black)
+    expect(p.subtle).toMatch(/^#/);    // brighter-than-mute subtitle
+  });
+
+  it('carries the Wu mark asset url and tribute disclaimer copy', () => {
+    expect(typeof wuTangTheme.assets.wuMark).toBe('string');
+    expect(wuTangTheme.assets.wuMark.length).toBeGreaterThan(0);
+    expect(wuTangTheme.copy.disclaimer).toMatch(/tribute/i);
+    expect(wuTangTheme.copy.dock).toBeTruthy();
+    expect(wuTangTheme.copy.search.placeholder).toMatch(/.+/);
+    expect(wuTangTheme.copy.stars.title).toMatch(/.+/);
+  });
 });

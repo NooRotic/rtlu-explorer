@@ -5,9 +5,10 @@
 
 const SUN_MIN = 6;   // scene-space radius floor for suns
 const SUN_MAX = 22;  // super-hub ceiling
-const DUST_MIN = 0.6;
-const DUST_MAX = 3.2;
+const DUST_MIN = 1.4; // raised (was 0.6) so the web reads + dust is catchable
+const DUST_MAX = 5.0; // raised (was 3.2)
 const DIM_OPACITY = 0.12;
+const ENLARGE = 1.9;  // how much connected/hovered dust grows when highlighted
 
 const strategies = new Map();
 
@@ -22,7 +23,21 @@ export function listStrategies() {
 export function encode(node, ctx) {
   const fn = strategies.get(ctx.strategy) ?? strategies.get('structural');
   const base = fn(node, ctx);
-  // Focus dimming is strategy-independent (applies to whichever lens is active).
+  const highlighted =
+    (ctx.hoverSet && ctx.hoverSet.has(node.id)) ||
+    (ctx.focusSet && ctx.focusSet.has(node.id));
+  if (highlighted) {
+    // Dust goes white-hot + enlarges (trace the connection); suns keep gold (avoid white blob).
+    const isDust = node.tier === 'dust';
+    return {
+      ...base,
+      color: isDust ? ctx.theme.palette.whiteHot : base.color,
+      size: isDust ? base.size * ENLARGE : base.size,
+      glow: Math.max(base.glow ?? 0, isDust ? 0.6 : base.glow ?? 0),
+      opacity: 1,
+    };
+  }
+  // Focus dimming (only when a selection is active and this node isn't part of it).
   if (ctx.focusSet && !ctx.focusSet.has(node.id)) {
     return { ...base, opacity: DIM_OPACITY };
   }

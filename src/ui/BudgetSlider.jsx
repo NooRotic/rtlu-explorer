@@ -2,14 +2,14 @@
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { BUDGET_STOPS } from '../engine/budget.js';
 
-export default function BudgetSlider({ value, total, onChange }) {
+export default function BudgetSlider({ value, total, onChange, style }) {
   const { palette, typography, copy } = useTheme();
   return (
     <div
       style={{
-        position: 'absolute', left: 18, bottom: 18, zIndex: 5,
         background: 'rgba(7,9,18,0.82)', border: `1px solid ${hexA(palette.gold, 0.25)}`,
         borderRadius: 10, padding: '12px 16px', minWidth: 230, backdropFilter: 'blur(6px)',
+        ...style,
       }}
     >
       <div style={{ fontFamily: typography.data, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: palette.gold }}>
