@@ -12,10 +12,12 @@ import { buildIslandHalo } from './islandHalo.js';
 export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, onSelect, onBuilt }) {
   const theme = useTheme();
   const fgRef = useRef();
-  const focusRef = useRef(focusId); // nodeThreeObject reads this synchronously
+  const focusRef = useRef(focusId); // current focus id (read synchronously by idle-drift)
   focusRef.current = focusId;
   const tweenUntilRef = useRef(0); // suppress idle drift while a camera tween is in flight
-  const hoverRef = useRef(null); // hovered node id — read synchronously by encoder + linkColor
+  const hoverRef = useRef(null);    // hovered node id
+  const hoverSetRef = useRef(null); // hovered node + neighbors — computed ONCE per hover
+  const focusSetRef = useRef(null); // selected node + neighbors — computed ONCE per focus change
 
   // Build + normalize once per snapshot.
   const graph = useMemo(
@@ -23,21 +25,38 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
     [snapshot, theme],
   );
 
-  // Apply the render budget: keep the top-N by degree. Additionally guarantee the selected node
-  // and its neighbors render (so search/stars can target nodes below the budget and the camera can
-  // fly to them). Fresh link copies: FG mutates source/target in place after the first tick.
-  const visible = useMemo(() => {
+  // Hover/focus neighbor sets are computed ONCE here (not per-link / per-node) and read from refs by
+  // the node + link accessors, which FG invokes thousands of times per refresh. Recomputing
+  // neighborsOf() inside those accessors was O(links²)/O(nodes×links) and janked on hover.
+  const focusSet = useMemo(() => (focusId ? neighborsOf(focusId, graph.links) : null), [graph, focusId]);
+  focusSetRef.current = focusSet;
+
+  // Render budget: keep the top-N by degree, memoized on [graph, budget] so the reference is STABLE
+  // across selections. FG re-runs its layout when the graphData object identity changes, so an
+  // in-budget click must reuse this same object (no re-heat / node jump).
+  const base = useMemo(() => {
     const top = topNByDegree(graph.nodes, graph.degree, budget);
     const keep = new Set(top.map((n) => n.id));
-    if (focusId && !keep.has(focusId)) {
-      neighborsOf(focusId, graph.links).forEach((id) => keep.add(id));
-    }
+    const nodes = graph.nodes.filter((n) => keep.has(n.id));
+    const links = graph.links
+      .filter((l) => keep.has(l.source) && keep.has(l.target))
+      .map((l) => ({ ...l }));
+    return { keep, data: { nodes, links } };
+  }, [graph, budget]);
+
+  // Only when the selection is OUTSIDE the budget do we union in {selected} ∪ neighbors (so
+  // search/stars can target a sub-budget node and the camera can fly to it). In-budget selections
+  // return the stable `base.data` reference — no churn.
+  const visible = useMemo(() => {
+    if (!focusId || base.keep.has(focusId)) return base.data;
+    const keep = new Set(base.keep);
+    neighborsOf(focusId, graph.links).forEach((id) => keep.add(id));
     const nodes = graph.nodes.filter((n) => keep.has(n.id));
     const links = graph.links
       .filter((l) => keep.has(l.source) && keep.has(l.target))
       .map((l) => ({ ...l }));
     return { nodes, links };
-  }, [graph, budget, focusId]);
+  }, [base, focusId, graph]);
 
   const maxCount = useMemo(() => graph.nodes.reduce((m, n) => Math.max(m, n.count || 0), 1), [graph]);
   const maxDegree = useMemo(
@@ -67,9 +86,8 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
 
   const nodeThreeObject = useMemo(() => {
     return (node) => {
-      const focusSet = focusRef.current ? neighborsOf(focusRef.current, graph.links) : null;
-      const hoverSet = hoverRef.current ? neighborsOf(hoverRef.current, graph.links) : null;
-      const enc = encode(node, encCtx(hoverSet, focusSet));
+      // Sets are precomputed into refs (see focusSet memo / handleNodeHover) — cheap .has() here.
+      const enc = encode(node, encCtx(hoverSetRef.current, focusSetRef.current));
       return buildNodeObject(enc, node, { ringColor: theme.palette.gold });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,13 +103,11 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
     const w = l.weight ?? 1;
     const alpha = Math.min(0.85, 0.18 + Math.sqrt(w) * 0.12);
     const [s, t] = ends(l);
-    const hoverSet = hoverRef.current ? neighborsOf(hoverRef.current, graph.links) : null;
-    const focusSet = focusRef.current ? neighborsOf(focusRef.current, graph.links) : null;
-    const hot =
-      (hoverSet && hoverSet.has(s) && hoverSet.has(t)) ||
-      (focusSet && focusSet.has(s) && focusSet.has(t));
+    const hs = hoverSetRef.current; // precomputed once per hover
+    const fs = focusSetRef.current; // precomputed once per focus change
+    const hot = (hs && hs.has(s) && hs.has(t)) || (fs && fs.has(s) && fs.has(t));
     if (hot) return hexA(theme.palette.whiteHot, 0.95);
-    if (focusRef.current) return hexA(theme.palette.gold, 0.04); // selected isolate dims the rest
+    if (fs) return hexA(theme.palette.gold, 0.04); // selected isolate dims the rest
     return hexA(theme.palette.gold, alpha); // hover (no selection) leaves the rest as gold
   };
   const linkWidth = (l) => Math.min(2.6, 0.3 + Math.sqrt(l.weight ?? 1) * 0.35);
@@ -152,13 +168,13 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
   }, [showIslands, graph]);
 
   const flyTo = (node) => {
-    if (!node) return;
+    if (!node || node.x == null) return; // coords not seeded by the sim yet — caller retries
     const dist = 120;
-    const r = Math.hypot(node.x || 0, node.y || 0, node.z || 0) || 1;
+    const r = Math.hypot(node.x, node.y || 0, node.z || 0) || 1;
     const ratio = 1 + dist / r;
     tweenUntilRef.current = performance.now() + theme.motion.cameraTweenMs;
     fgRef.current?.cameraPosition(
-      { x: (node.x || 0) * ratio, y: (node.y || 0) * ratio, z: (node.z || 0) * ratio },
+      { x: node.x * ratio, y: (node.y || 0) * ratio, z: (node.z || 0) * ratio },
       node,
       theme.motion.cameraTweenMs,
     );
@@ -167,20 +183,33 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
   const handleNodeClick = (node) => onSelect?.(node);
   const handleBgClick = () => onSelect?.(null);
 
-  // Fly to the selected node from any trigger (canvas/dock/search/stars). One rAF defer lets a
-  // freshly-unioned node receive simulation coords before we read node.x/y/z.
+  // Fly to the selected node from any trigger (canvas/dock/search/stars). A freshly-unioned
+  // out-of-budget node needs a few frames before the sim seeds its x/y/z, so retry until ready
+  // rather than flying to the origin. (FG 1.x exposes no graphData() getter; visible.nodes holds the
+  // same node objects FG mutates with coords in place, so it's the live source.)
   useEffect(() => {
     if (!focusId) return;
-    const id = requestAnimationFrame(() => {
-      const node = (fgRef.current?.graphData?.()?.nodes || visible.nodes).find((n) => n.id === focusId);
-      flyTo(node);
-    });
-    return () => cancelAnimationFrame(id);
+    let raf;
+    let tries = 0;
+    const attempt = () => {
+      const node = visible.nodes.find((n) => n.id === focusId);
+      if (node && node.x != null) {
+        flyTo(node);
+        return;
+      }
+      if (tries++ < 30) raf = requestAnimationFrame(attempt);
+    };
+    raf = requestAnimationFrame(attempt);
+    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId, visible]);
 
+  // Reset the global cursor if we unmount mid-hover.
+  useEffect(() => () => { document.body.style.cursor = 'default'; }, []);
+
   const handleNodeHover = (node) => {
     hoverRef.current = node?.id ?? null;
+    hoverSetRef.current = node ? neighborsOf(node.id, graph.links) : null; // computed once per hover
     document.body.style.cursor = node ? 'pointer' : 'default';
     fgRef.current?.refresh?.();
   };
