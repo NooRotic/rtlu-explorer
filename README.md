@@ -16,7 +16,7 @@ This is the **public** half of a two-repo split:
 | Repo | Visibility | Role |
 |---|---|---|
 | `RipTheLyricalUniverse` | private | source data, ingestion pipeline, **export script** |
-| `rtlu-explorer` (this) | public | static viz, deployed to IONOS |
+| `rtlu-explorer` (this) | public | static viz, deployed to GitHub Pages → `wu-atlas.nooroticx.tv` |
 
 No live Hindsight process is ever exposed. The private repo's
 `src/export-bank.js` is the only thing that talks to the graph; it writes
@@ -63,8 +63,12 @@ pnpm preview    # serve the production build locally
 
 ## Deploy
 
-Static build (`dist/`) is deployed manually to IONOS Webhosting after each new
-artist snapshot or visualization change.
+Auto-deployed to **GitHub Pages** at **https://wu-atlas.nooroticx.tv** on every push to `main`
+(`.github/workflows/deploy.yml`: install → test → `pnpm build` → upload `dist/` → Pages). The
+custom domain is pinned by `public/CNAME` plus a DNS `CNAME` record (`wu-atlas → NooRotic.github.io`).
+
+Multi-artist builds ship as **separate sites** under the same naming system —
+`canibus-atlas.nooroticx.tv`, `mitski-atlas.nooroticx.tv` — each its own build/deploy.
 
 ## License
 
