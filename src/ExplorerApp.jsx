@@ -29,6 +29,7 @@ function Explorer() {
   const [selected, setSelected] = useState(null);
   const [graph, setGraph] = useState(null);
   const [starsOpen, setStarsOpen] = useState(false);
+  const [standoff, setStandoff] = useState(120); // camera fly-in distance; WU-STARS picks land further back
   const [showIslands, setShowIslands] = useState(() => {
     try { return globalThis.localStorage?.getItem(ISLANDS_KEY) !== 'false'; } catch { return true; }
   });
@@ -39,8 +40,11 @@ function Explorer() {
   }, [showIslands]);
 
   const onBuilt = useCallback((g) => setGraph(g), []);
-  // Selecting from anywhere closes the stars list (swap) and opens the entity.
-  const select = useCallback((node) => { setSelected(node); setStarsOpen(false); }, []);
+  // Selecting from the canvas/dock/search closes the stars list (swap) and opens the entity, with
+  // the normal close-in camera standoff.
+  const select = useCallback((node) => { setStandoff(120); setSelected(node); setStarsOpen(false); }, []);
+  // Selecting from the WU-STARS list lands the camera further back (more context while browsing).
+  const selectFromStars = useCallback((node) => { setStandoff(210); setSelected(node); setStarsOpen(false); }, []);
   // Opening the stars list closes any open drawer (swap).
   const toggleStars = useCallback(() => { setStarsOpen((o) => { if (!o) setSelected(null); return !o; }); }, []);
 
@@ -57,6 +61,7 @@ function Explorer() {
         strategy={strategy}
         focusId={selected?.id ?? null}
         showIslands={showIslands}
+        flyStandoff={standoff}
         onSelect={select}
         onBuilt={onBuilt}
       />
@@ -67,7 +72,7 @@ function Explorer() {
         <IslandsToggle theme={theme} on={showIslands} onChange={setShowIslands} />
       </div>
 
-      <StarsPanel graph={graph} open={starsOpen} onToggle={toggleStars} onPick={select} />
+      <StarsPanel graph={graph} open={starsOpen} onToggle={toggleStars} onPick={selectFromStars} />
       <WuDock graph={graph} roster={theme.suns.roster} onSelect={select} />
       <Drawer node={selected} graph={graph} onClose={() => setSelected(null)} />
 
