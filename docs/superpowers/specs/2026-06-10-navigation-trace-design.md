@@ -55,11 +55,13 @@ Behavior:
 - Raise the dust size range (baseline bigger so the web reads and dust is catchable) — tune constants `DUST_MIN`/`DUST_MAX` upward.
 - Connected/hovered dust enlarges further (from sets above). Dust stays ash unless in a hover/connected set, then white-hot.
 
-### 6. Islands → peripheral-halo field — `src/engine/GraphScene.jsx` (+ helper)
-The 144 unlinked (degree-0) entities render as a **faint ash halo ring on an outer shell**, **always on, independent of the budget**, behind/around the active web — present but quiet, never mid-scene floaters. Implementation: a dedicated layer of fixed-position points on a large sphere shell (deterministic placement; very low opacity ash; non-magnified). They are not part of the force sim and do not clutter the core.
+### 6. Islands → peripheral-halo field + toggle — `src/engine/GraphScene.jsx` (+ helper)
+The 144 unlinked (degree-0) entities render as a **faint ash halo ring on an outer shell**, behind/around the active web — present but quiet, never mid-scene floaters. Implementation: a dedicated layer of fixed-position points on a large sphere shell (deterministic placement; very low opacity ash from a fixed theme intensity constant; non-magnified). They are not part of the force sim and do not clutter the core.
+
+**Halo toggle (decision B):** an **on/off toggle, default on**, lives in the top-left control cluster (with the budget slider). It is the art-direction's documented "peripheral halo vs. off-by-default toggle" choice. Not a budget — just visibility; intensity is a fixed constant, not a control (islands are 144 trivially-cheap points, so there is no perf lever to expose). State (`showIslands`) lives in `ExplorerApp`, persisted in `localStorage` for parity with the budget. Halo is independent of the node budget either way.
 
 ### 7. Layout moves — `src/ExplorerApp.jsx` + `BudgetSlider.jsx`
-- **Budget slider → top-left, under the title** (D3).
+- **Top-left control cluster, under the title:** the **budget slider** (D3) and the **islands-halo toggle** (§6) grouped together.
 - **Brighten the subtitle/tagline** for contrast (from `palette.mute` to a brighter token, e.g. `palette.ink` or a new `palette.subtle` ≈ `#C7CDD4`).
 - **Footer disclaimer** line (IP note).
 
@@ -91,7 +93,7 @@ Selection state stays in `ExplorerApp` (`selected`) and flows down via `focusId`
 ## Testing
 
 - **Unit (Vitest):** `searchEntities` ranking (prefix > substring, degree tie-break, limit); `encode` new states (hover/connected → white-hot + enlarged; non-members unchanged; focus dimming still applies). Extend existing encode tests.
-- **Visual (live, headless Chrome):** dock magnify + breathe-open search; coin click flies+selects; search jumps to a dust node and renders it; WU-STARS slide-out + row-click swap to J-card; hover white-trace; select persistent white web + enlarged connected dust; islands halo present and quiet; slider top-left; subtitle contrast.
+- **Visual (live, headless Chrome):** dock magnify + breathe-open search; coin click flies+selects; search jumps to a dust node and renders it; WU-STARS slide-out + row-click swap to J-card; hover white-trace; select persistent white web + enlarged connected dust; islands halo present and quiet + toggle hides/shows it (and persists across reload); slider top-left; subtitle contrast.
 
 ## Out of scope (defer)
 
