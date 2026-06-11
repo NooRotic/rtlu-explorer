@@ -14,4 +14,9 @@ export const copy = {
     label: 'render budget',
     hint: 'top-N most-connected nodes',
   },
+  islands: { label: 'islands', hint: 'unlinked entities (halo)' },
+  dock: 'members',
+  search: { placeholder: 'search the universe…', empty: 'no match' },
+  stars: { title: 'WU-STARS', hint: 'most-connected' },
+  disclaimer: 'Unofficial fan tribute — not affiliated with or endorsed by Wu-Tang Clan.',
 };
