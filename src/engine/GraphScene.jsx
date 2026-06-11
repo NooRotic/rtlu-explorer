@@ -7,13 +7,15 @@ import { topNByDegree, neighborsOf } from './selectors.js';
 import { encode } from './encode.js';
 import { buildNodeObject } from './nodeObject.js';
 import { buildNebula } from './nebulaLayer.js';
+import { buildIslandHalo } from './islandHalo.js';
 
-export default function GraphScene({ snapshot, budget, strategy, focusId, onSelect, onBuilt }) {
+export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, onSelect, onBuilt }) {
   const theme = useTheme();
   const fgRef = useRef();
   const focusRef = useRef(focusId); // nodeThreeObject reads this synchronously
   focusRef.current = focusId;
   const tweenUntilRef = useRef(0); // suppress idle drift while a camera tween is in flight
+  const hoverRef = useRef(null); // hovered node id — read synchronously by encoder + linkColor
 
   // Build + normalize once per snapshot.
   const graph = useMemo(
@@ -21,18 +23,21 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
     [snapshot, theme],
   );
 
-  // Apply the render budget: keep the top-N by degree (sheds the weight-1 tail first).
-  // The visible links are fresh copies: react-force-graph mutates source/target in place (string
-  // id -> node object) after the first tick, so we must NOT let it alias graph.links, which the
-  // selectors (neighborsOf / entityStats) read by string id on every click.
+  // Apply the render budget: keep the top-N by degree. Additionally guarantee the selected node
+  // and its neighbors render (so search/stars can target nodes below the budget and the camera can
+  // fly to them). Fresh link copies: FG mutates source/target in place after the first tick.
   const visible = useMemo(() => {
-    const nodes = topNByDegree(graph.nodes, graph.degree, budget);
-    const keep = new Set(nodes.map((n) => n.id));
+    const top = topNByDegree(graph.nodes, graph.degree, budget);
+    const keep = new Set(top.map((n) => n.id));
+    if (focusId && !keep.has(focusId)) {
+      neighborsOf(focusId, graph.links).forEach((id) => keep.add(id));
+    }
+    const nodes = graph.nodes.filter((n) => keep.has(n.id));
     const links = graph.links
       .filter((l) => keep.has(l.source) && keep.has(l.target))
       .map((l) => ({ ...l }));
     return { nodes, links };
-  }, [graph, budget]);
+  }, [graph, budget, focusId]);
 
   const maxCount = useMemo(() => graph.nodes.reduce((m, n) => Math.max(m, n.count || 0), 1), [graph]);
   const maxDegree = useMemo(
@@ -45,11 +50,12 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
     onBuilt?.(graph);
   }, [graph, onBuilt]);
 
-  const encCtx = (focusSet) => ({
+  const encCtx = (hoverSet, focusSet) => ({
     theme,
     degree: graph.degree,
     maxCount,
     maxDegree,
+    hoverSet,
     focusSet,
     strategy,
   });
@@ -62,7 +68,8 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
   const nodeThreeObject = useMemo(() => {
     return (node) => {
       const focusSet = focusRef.current ? neighborsOf(focusRef.current, graph.links) : null;
-      const enc = encode(node, encCtx(focusSet));
+      const hoverSet = hoverRef.current ? neighborsOf(hoverRef.current, graph.links) : null;
+      const enc = encode(node, encCtx(hoverSet, focusSet));
       return buildNodeObject(enc, node, { ringColor: theme.palette.gold });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,17 +77,22 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
 
   // Weighted gold edges: faint lattice for weight-1, bright flare for strong ties (alpha scales
   // with sqrt(weight), so w=1 sits at ~0.30 and the w=56 ties flare up to the 0.85 cap).
+  const ends = (l) => [
+    typeof l.source === 'object' ? l.source.id : l.source,
+    typeof l.target === 'object' ? l.target.id : l.target,
+  ];
   const linkColor = (l) => {
     const w = l.weight ?? 1;
     const alpha = Math.min(0.85, 0.18 + Math.sqrt(w) * 0.12);
-    // honor focus dimming on edges too
-    if (focusRef.current) {
-      const s = typeof l.source === 'object' ? l.source.id : l.source;
-      const t = typeof l.target === 'object' ? l.target.id : l.target;
-      const inFocus = s === focusRef.current || t === focusRef.current;
-      if (!inFocus) return hexA(theme.palette.gold, 0.04);
-    }
-    return hexA(theme.palette.gold, alpha);
+    const [s, t] = ends(l);
+    const hoverSet = hoverRef.current ? neighborsOf(hoverRef.current, graph.links) : null;
+    const focusSet = focusRef.current ? neighborsOf(focusRef.current, graph.links) : null;
+    const hot =
+      (hoverSet && hoverSet.has(s) && hoverSet.has(t)) ||
+      (focusSet && focusSet.has(s) && focusSet.has(t));
+    if (hot) return hexA(theme.palette.whiteHot, 0.95);
+    if (focusRef.current) return hexA(theme.palette.gold, 0.04); // selected isolate dims the rest
+    return hexA(theme.palette.gold, alpha); // hover (no selection) leaves the rest as gold
   };
   const linkWidth = (l) => Math.min(2.6, 0.3 + Math.sqrt(l.weight ?? 1) * 0.35);
 
@@ -118,9 +130,29 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
     };
   }, [theme]);
 
-  const handleNodeClick = (node) => {
-    onSelect?.(node);
-    // cinematic push-in: place camera a fixed standoff from the node along its current direction
+  // Island halo: faint peripheral field of the 144 degree-0 entities, toggleable, budget-independent.
+  useEffect(() => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    const scene = fg.scene();
+    const islands = graph.nodes.filter((n) => (graph.degree[n.id] ?? 0) === 0);
+    const halo = buildIslandHalo(islands, 600, theme);
+    scene.add(halo);
+    return () => {
+      scene.remove(halo);
+      halo.geometry.dispose();
+      halo.material.dispose();
+    };
+  }, [graph, theme]);
+
+  // Toggle visibility without rebuilding.
+  useEffect(() => {
+    const halo = fgRef.current?.scene?.().getObjectByName('island-halo');
+    if (halo) halo.visible = !!showIslands;
+  }, [showIslands, graph]);
+
+  const flyTo = (node) => {
+    if (!node) return;
     const dist = 120;
     const r = Math.hypot(node.x || 0, node.y || 0, node.z || 0) || 1;
     const ratio = 1 + dist / r;
@@ -132,7 +164,26 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
     );
   };
 
+  const handleNodeClick = (node) => onSelect?.(node);
   const handleBgClick = () => onSelect?.(null);
+
+  // Fly to the selected node from any trigger (canvas/dock/search/stars). One rAF defer lets a
+  // freshly-unioned node receive simulation coords before we read node.x/y/z.
+  useEffect(() => {
+    if (!focusId) return;
+    const id = requestAnimationFrame(() => {
+      const node = (fgRef.current?.graphData?.()?.nodes || visible.nodes).find((n) => n.id === focusId);
+      flyTo(node);
+    });
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, visible]);
+
+  const handleNodeHover = (node) => {
+    hoverRef.current = node?.id ?? null;
+    document.body.style.cursor = node ? 'pointer' : 'default';
+    fgRef.current?.refresh?.();
+  };
 
   return (
     <ForceGraph3D
@@ -146,6 +197,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, onSele
       linkOpacity={1}
       enableNodeDrag={false}
       onNodeClick={handleNodeClick}
+      onNodeHover={handleNodeHover}
       onBackgroundClick={handleBgClick}
       warmupTicks={40}
       cooldownTicks={120}
