@@ -1,183 +1,60 @@
-# Deploy `wu-atlas.nooroticx.tv` — Implementation Plan
+# Deploy `wu-atlas.nooroticx.tv` (IONOS) — Implementation Plan
 
-> **For agentic workers:** small ops task. Steps use checkbox (`- [ ]`) tracking. Code steps carry exact file contents; manual steps (GitHub/DNS) are the human's and are clearly marked **[MANUAL]**.
+> Small ops task. Code steps carry exact contents; manual steps (IONOS subdomain, DNS, GitHub secrets) are the human's, marked **[MANUAL]**.
 
-**Goal:** Ship the RTLU Explorer to the public at **`https://wu-atlas.nooroticx.tv`**, auto-deployed from `main` via GitHub Actions → GitHub Pages, mirroring the proven **prism** (`twitch-glaze-me`) setup.
+**Goal:** Ship the RTLU Explorer to **`https://wu-atlas.nooroticx.tv`** on **IONOS shared hosting**, deployed from GitHub Actions over SSH/SCP (manual `workflow_dispatch`), mirroring the proven **wsp-cast-sender** pattern.
 
-**Decision recap (locked):** GitHub Pages (not IONOS) — rtlu is the same Vite+pnpm+`dist/` stack as prism, already public, with **no runtime secrets** (static JSON, fonts from Google CDN), so Pages is near-zero-config and auto-deploys. The heavier wsp-sender IONOS/SSH pattern exists only to preserve gitignored media, which rtlu doesn't have. Naming system: `<artist>-atlas.nooroticx.tv` (RTLU = the *Universe*; each artist site = an *Atlas*). First site: `wu-atlas`.
+**Host decision (revised 2026-06-13):** **IONOS, not GitHub Pages** — the user wants the build hosted on the IONOS-served `nooroticx.tv`, not github.io. `base: './'` was originally chosen for IONOS docroots (see `vite.config.js` comment), so it's already correct; no `CNAME` file (DNS points the subdomain at IONOS). The heavier SSH pattern is justified here because that's where the user wants the bytes.
 
-**Reference:** `prism` (`C:/Dev/projects/twitch-glaze-me/.github/workflows/deploy.yml`) deploys to Pages at `prism.nooroticx.tv` via a `CNAME` file.
+**Naming:** `<artist>-atlas.nooroticx.tv`; first site `wu-atlas`. (RTLU = the *Universe*; each artist site = an *Atlas*.)
 
-**Pre-deploy scan:** ✅ completed 2026-06-11 — no tracked secrets/`.env`, no hardcoded local paths, no debug `console.*`, no TODO/FIXME, no `localhost`/dev URLs; build green; 32/32 tests.
-
----
-
-## Task 1: Deploy workflow (Pages, on push to `main`)
-
-**Files:** Create `.github/workflows/deploy.yml`
-
-- [ ] **Step 1: Create `.github/workflows/deploy.yml`**
-
-Mirrors prism, plus a `pnpm test` gate before build (rtlu has a real suite; prism kept tests in a separate ci.yml). No `env:` block — rtlu has no build-time secrets.
-
-```yaml
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
-jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test            # gate: never deploy a red build
-      - run: pnpm build
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-- [ ] **Step 2: Commit** — `git add .github/workflows/deploy.yml && git commit -m "ci: GitHub Pages deploy workflow (mirrors prism)"`
+**Pre-deploy scan:** ✅ 2026-06-11 — no tracked secrets/`.env`, no hardcoded local paths, no debug `console.*`, no TODO/FIXME, no `localhost`/dev URLs; build green; tests pass.
 
 ---
 
-## Task 2: PR CI (test + build on pull requests)
+## Task 1: IONOS deploy workflow
 
-**Files:** Create `.github/workflows/ci.yml`
+**Files:** `.github/workflows/deploy.yml` (already written — verify it matches below)
 
-Keeps PRs honest without double-running on `main` (deploy.yml already tests `main`).
+Manual `workflow_dispatch` (production deploys are deliberate, not on every push). `test` job → `build-and-deploy` job: build `dist/` → backup current docroot → SCP `dist/*` (clean replace) → chmod 644/755 → prune to last 3 backups. Secrets: `SSH_HOST`, `SSH_USERNAME`, `SSH_PASSWORD`, `SSH_PORT`, `DEPLOY_PATH`. No `ENV_FILE` (rtlu has no build-time secrets). Build output is Vite `dist/` (not Next `out/`).
 
-- [ ] **Step 1: Create `.github/workflows/ci.yml`**
+- [ ] Confirm `.github/workflows/deploy.yml` exists with the IONOS SSH/SCP content (test → build → backup → scp `dist/*` → perms → prune).
 
-```yaml
-name: CI
+## Task 2: PR CI (unchanged, host-agnostic)
 
-on:
-  pull_request:
+- [ ] `.github/workflows/ci.yml` runs `pnpm test` + `pnpm build` on pull requests. (Already present; keep.)
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test
-      - run: pnpm build
-```
+## Task 3: Base path (no change)
 
-- [ ] **Step 2: Commit** — `git add .github/workflows/ci.yml && git commit -m "ci: test + build on pull requests"`
+- [ ] `vite.config.js` keeps `base: './'` — correct for an IONOS docroot. No `CNAME` file (removed; Pages-only).
 
----
+## Task 4: README (done)
 
-## Task 3: Custom-domain `CNAME` (shipped in the build)
+- [ ] README architecture row + Deploy section reflect **IONOS via SSH/SCP**. (Updated 2026-06-13.)
 
-**Files:** Create `public/CNAME`
+## Task 5: [MANUAL] IONOS + DNS + GitHub secrets (one-time)
 
-Vite copies `public/` to the `dist/` root, so the Pages artifact includes `dist/CNAME` — the robust way to pin the custom domain for artifact deploys (survives re-deploys; doesn't depend solely on the repo UI setting).
-
-- [ ] **Step 1: Create `public/CNAME`** with exactly one line (no trailing whitespace):
-
-```
-wu-atlas.nooroticx.tv
-```
-
-- [ ] **Step 2: Verify the build emits it** — `node node_modules/vite/bin/vite.js build` then confirm `dist/CNAME` exists and reads `wu-atlas.nooroticx.tv`.
-
-- [ ] **Step 3: Commit** — `git add public/CNAME && git commit -m "ci: pin custom domain wu-atlas.nooroticx.tv via public/CNAME"`
-
-**Base-path note:** `vite.config.js` keeps `base: './'` (relative). It works at a custom-domain **root** *and* a github.io subpath — strictly more portable than prism's `base:'/'`. No change needed. The data loader already uses `import.meta.env.BASE_URL`, so `public/data/...` fetches resolve correctly at the root.
-
----
-
-## Task 4: README deploy section
-
-**Files:** Modify `README.md`
-
-- [ ] **Step 1:** Replace the architecture-table row `| `rtlu-explorer` (this) | public | static viz, deployed to IONOS |` with:
-
-```markdown
-| `rtlu-explorer` (this) | public | static viz, deployed to GitHub Pages → `wu-atlas.nooroticx.tv` |
-```
-
-- [ ] **Step 2:** Replace the entire `## Deploy` section body with:
-
-```markdown
-## Deploy
-
-Auto-deployed to **GitHub Pages** at **https://wu-atlas.nooroticx.tv** on every push to `main`
-(`.github/workflows/deploy.yml`: install → test → `pnpm build` → upload `dist/` → Pages). The
-custom domain is pinned by `public/CNAME` plus a DNS `CNAME` record (`wu-atlas → NooRotic.github.io`).
-
-Multi-artist builds ship as **separate sites** under the same naming system —
-`canibus-atlas.nooroticx.tv`, `mitski-atlas.nooroticx.tv` — each its own build/deploy.
-```
-
-- [ ] **Step 3: Commit** — `git add README.md && git commit -m "docs: README deploy section → GitHub Pages / wu-atlas.nooroticx.tv"`
-
----
-
-## Task 5: [MANUAL] GitHub Pages + DNS (the human does these once)
-
-These can't be scripted from here — they're in the GitHub UI and your DNS host.
-
-- [ ] **GitHub repo → Settings → Pages → Build and deployment → Source: `GitHub Actions`.**
-- [ ] **(Optional, the `public/CNAME` already covers it):** Settings → Pages → Custom domain = `wu-atlas.nooroticx.tv` → Save; tick **Enforce HTTPS** once the cert provisions.
-- [ ] **DNS at the `nooroticx.tv` host** (wherever prism's records live): add a **`CNAME`** record:
-  - Host/Name: `wu-atlas`
-  - Value/Target: `NooRotic.github.io`  *(apex would need A records; this is a subdomain, so CNAME is correct)*
-- [ ] DNS propagation can take minutes–hours; GitHub will show a green check on the Pages custom-domain once it resolves + cert issues.
-
----
+- [ ] **IONOS panel:** create the subdomain `wu-atlas.nooroticx.tv` and point its **document root** at a dedicated folder (e.g. `/wu-atlas` or the IONOS-assigned webspace path). Note that path → it becomes `DEPLOY_PATH`.
+- [ ] **SSH/SFTP:** ensure SSH access is enabled for the IONOS webspace; note host, username, port. (Same account that serves the other `nooroticx.tv` sites.)
+- [ ] **DNS:** point `wu-atlas` at the IONOS site (per IONOS's subdomain setup — usually automatic when the subdomain is created in the panel; otherwise an A/CNAME per IONOS instructions). Enable HTTPS (IONOS SSL/Let's Encrypt) for the subdomain.
+- [ ] **GitHub → repo Settings → Secrets and variables → Actions** → add: `SSH_HOST`, `SSH_USERNAME`, `SSH_PASSWORD`, `SSH_PORT`, `DEPLOY_PATH`.
 
 ## Task 6: Trigger + verify
 
-- [ ] **Step 1:** Merge `polish-deploy` (this branch) → `main` (the deploy workflow only runs on `main`). The push triggers `deploy.yml`.
-- [ ] **Step 2:** Watch the run: `gh run watch` (or repo → Actions). Expect green: install → test (32 passing) → build → deploy.
-- [ ] **Step 3: Verify live** at `https://wu-atlas.nooroticx.tv`:
-  - [ ] Page loads over **HTTPS**; deep-dark background, graph renders (suns + gold web).
-  - [ ] `public/data/...` JSON fetches succeed (Network tab 200s) — confirms relative base works at root.
-  - [ ] Dock, search, WU-STARS, drawer, islands toggle all work.
-  - [ ] No console errors. Title/fonts correct (Google Fonts load).
-  - [ ] Tribute disclaimer visible in footer.
-- [ ] **Step 4:** If anything 404s (asset paths), it means the base/CNAME interplay is off — check `dist/CNAME` shipped and Pages custom domain is set; relative `./` assets should otherwise resolve.
+- [ ] **Step 1:** Merge the deploy branch → `main` (so the workflow exists on the default branch).
+- [ ] **Step 2:** Run it: repo → Actions → **Deploy to IONOS** → **Run workflow** (`workflow_dispatch`). Or `gh workflow run "Deploy to IONOS"`.
+- [ ] **Step 3:** Watch the run green: test → build → backup → SCP → perms → prune.
+- [ ] **Step 4: Verify live** at `https://wu-atlas.nooroticx.tv`:
+  - [ ] HTTPS; deep-dark background; graph renders (suns + gold web).
+  - [ ] `data/...` JSON fetches 200 (relative `base:'./'` resolves at the docroot root).
+  - [ ] Dock, search, WU-STARS, drawer, islands toggle, About modal all work.
+  - [ ] OG card resolves at `https://wu-atlas.nooroticx.tv/og.png`; favicon loads; no console errors.
 
 ---
 
-## Notes / future
+## Notes
 
-- **Multi-artist (Phase 4):** Pages = one custom domain per repo. When Canibus/Mitski arrive, the clean path is a **separate repo per artist** (matches the "separate sites from separate builds" decision) each with its own `deploy.yml` + `CNAME`, OR revisit IONOS (one account, many subdomain docroots via the wsp-sender SSH pattern). Not needed for Wu.
-- **Perf (optional later):** the JS bundle is ~1.64 MB (three.js), ~450 KB gzipped — Pages serves gzip automatically, so no `.htaccess` needed (that was an IONOS-only concern).
-- **nebula tuning** remains the one open viz-polish item (`theme/wu-tang/nebula.js`) — independent of deploy.
+- **Why manual trigger:** SSH production deploys benefit from a deliberate push (vs auto-on-merge). If auto is wanted later, add `on: push: branches: [main]`.
+- **Multi-artist (Phase 4):** IONOS hosts many subdomains under one account — `canibus-atlas`/`mitski-atlas` become additional `DEPLOY_PATH`s (separate builds), no per-repo Pages-domain limit.
+- **Perf:** IONOS Apache — a `.htaccess` for gzip + cache headers on the docroot is an optional later win (the JS bundle gzips ~1.64MB→~450KB). Not required for launch.
+- **nebula tuning** remains the one open viz-polish item, independent of deploy.
