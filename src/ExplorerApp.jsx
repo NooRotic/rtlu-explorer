@@ -9,9 +9,12 @@ import BudgetSlider from './ui/BudgetSlider.jsx';
 import Drawer from './ui/Drawer.jsx';
 import WuDock from './ui/WuDock.jsx';
 import StarsPanel from './ui/StarsPanel.jsx';
+import AboutModal from './ui/AboutModal.jsx';
+import { snapshotStats } from './engine/stats.js';
 
 const ARTIST = 'wu-tang-clan';
 const ISLANDS_KEY = `rtlu.showIslands.${ARTIST}`;
+const SEEN_KEY = `rtlu.seenIntro.${ARTIST}`;
 
 export default function ExplorerApp() {
   return (
@@ -38,6 +41,22 @@ function Explorer() {
   useEffect(() => {
     try { globalThis.localStorage?.setItem(ISLANDS_KEY, String(showIslands)); } catch { /* ignore */ }
   }, [showIslands]);
+
+  const [aboutOpen, setAboutOpen] = useState(false);
+
+  // Auto-open the About modal once, on first visit (only after the snapshot is ready so the numbers
+  // are populated). Remember the visit so returning users aren't gated.
+  useEffect(() => {
+    if (status !== 'ready') return;
+    let seen = false;
+    try { seen = globalThis.localStorage?.getItem(SEEN_KEY) === 'true'; } catch { /* ignore */ }
+    if (!seen) setAboutOpen(true);
+  }, [status]);
+
+  const closeAbout = useCallback(() => {
+    setAboutOpen(false);
+    try { globalThis.localStorage?.setItem(SEEN_KEY, 'true'); } catch { /* ignore */ }
+  }, []);
 
   const onBuilt = useCallback((g) => setGraph(g), []);
   // Selecting from the canvas/dock/search closes the stars list (swap) and opens the entity, with
@@ -70,11 +89,23 @@ function Explorer() {
       <div style={{ position: 'absolute', top: 86, left: 18, zIndex: 5, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <BudgetSlider value={budget} total={total} onChange={setBudget} />
         <IslandsToggle theme={theme} on={showIslands} onChange={setShowIslands} />
+        <button
+          onClick={() => setAboutOpen(true)}
+          style={{
+            alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+            background: 'transparent', border: 'none', padding: '2px 0',
+            fontFamily: theme.typography.data, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase',
+            color: theme.palette.mute,
+          }}
+        >
+          <span style={{ color: theme.palette.gold }}>ⓘ</span> {theme.copy.about.openLabel}
+        </button>
       </div>
 
       <StarsPanel graph={graph} open={starsOpen} onToggle={toggleStars} onPick={selectFromStars} />
       <WuDock graph={graph} roster={theme.suns.roster} onSelect={select} />
       <Drawer node={selected} graph={graph} onClose={() => setSelected(null)} />
+      <AboutModal open={aboutOpen} stats={snapshotStats(snapshot)} onClose={closeAbout} />
 
       <footer style={{
         position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', zIndex: 4,
