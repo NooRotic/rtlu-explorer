@@ -48,4 +48,15 @@ describe('wuTangTheme contract', () => {
     expect(wuTangTheme.copy.search.placeholder).toMatch(/.+/);
     expect(wuTangTheme.copy.stars.title).toMatch(/.+/);
   });
+
+  it('carries the About-modal copy', () => {
+    const a = wuTangTheme.copy.about;
+    expect(a.heading).toMatch(/.+/);
+    expect(Array.isArray(a.sections)).toBe(true);
+    expect(a.sections.length).toBeGreaterThanOrEqual(4);
+    expect(a.numbersTitle).toMatch(/.+/);
+    expect(a.tribute).toMatch(/tribute/i);
+    expect(Array.isArray(a.links)).toBe(true);
+    expect(wuTangTheme.copy.about.openLabel).toMatch(/.+/);
+  });
 });
