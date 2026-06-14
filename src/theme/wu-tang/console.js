@@ -28,6 +28,7 @@ export const wuConsole = {
     { cmd: 'wu.wisdom()', desc: 'a gem from the lab' },
     { cmd: 'wu.cipher()', desc: 'redraw the mark' },
     { cmd: 'wu.stats()', desc: 'the numbers behind the galaxy' },
+    { cmd: 'wu.help()', desc: 'these commands' },
   ],
   numbersUnits: { entities: 'entities', links: 'connections', docs: 'documents' },
   statsTail: 'in the lab.',

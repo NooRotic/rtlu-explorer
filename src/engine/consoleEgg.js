@@ -1,9 +1,10 @@
 // src/engine/consoleEgg.js
-// Artist-agnostic console easter egg. The theme supplies the words (content); this
-// prints a styled banner and installs a `wu` API on the target (window). Every command
-// RETURNS its string and also logs it, so it is unit-testable without scraping console.
-// Idempotent per target (guards against React StrictMode's double-invoke). No alert(),
-// no overriding native console methods — it only ADDS a banner + target.wu.
+// Console easter egg — content-driven, so any artist theme can supply the words. The
+// theme provides `content`; this prints a styled banner and mounts the API as `target.wu`
+// (the `wu` global name is fixed today; a future second artist would parameterize it).
+// Every command RETURNS its string and also logs it, so it is unit-testable without
+// scraping console. Idempotent per target (guards against React StrictMode's double-
+// invoke). No alert(), no overriding native console methods — it only ADDS a banner + target.wu.
 export function installConsoleEgg({ content, stats, accent = '#E8B306', target = globalThis, logger = console } = {}) {
   if (target.wu) return target.wu; // already installed (StrictMode-safe)
 

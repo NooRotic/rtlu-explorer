@@ -59,8 +59,8 @@ function Explorer() {
     try { globalThis.localStorage?.setItem(SEEN_KEY, 'true'); } catch { /* ignore */ }
   }, []);
 
-  // Console easter egg: install once when the galaxy is ready, so wu.stats() reflects
-  // live numbers and the banner prints as the universe comes alive.
+  // Console easter egg: install once when the galaxy is ready, so wu.stats() reports the
+  // loaded snapshot numbers and the banner prints as the universe comes alive.
   const eggInstalled = useRef(false);
   useEffect(() => {
     if (status !== 'ready' || eggInstalled.current) return;

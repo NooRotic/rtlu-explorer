@@ -68,6 +68,7 @@ describe('wuTangTheme contract', () => {
 
   it('carries the console-egg content', () => {
     const c = wuTangTheme.console;
+    expect(c.title).toMatch(/.+/);
     expect(Array.isArray(c.intro)).toBe(true);
     expect(c.intro.length).toBeGreaterThanOrEqual(3);
     expect(c.ascii).toMatch(/.+/);
