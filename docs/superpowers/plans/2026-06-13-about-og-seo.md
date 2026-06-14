@@ -123,11 +123,7 @@ Expected: FAIL — `copy.about` undefined.
     openLabel: 'about',
     heading: 'What is this?',
     sections: [
-      {
-        title: 'A map of the cipher',
-        body: "A living map of the people, places, and references woven through Wu-Tang Clan's verses. The graph is the work — there are no lyrics here, only the universe of names behind them.",
-      },
-      {
+
         title: 'What powers it',
         body: 'Every node and edge is exported from a private Hindsight knowledge graph — who and what the verses name, and how often those names surface together. That snapshot ships as static JSON and renders here as a 3D force-directed galaxy (react-force-graph-3d + three.js). No live backend, no lyrics, nothing tracked.',
       },
