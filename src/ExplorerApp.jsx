@@ -126,7 +126,7 @@ function Explorer() {
         fontFamily: theme.typography.data, fontSize: 9, color: theme.palette.mute,
         pointerEvents: 'none', lineHeight: 1.5,
       }}>
-        <div>
+        <div aria-hidden="true">
           <span style={{ color: theme.palette.gold, letterSpacing: 1 }}>{theme.copy.creed.acronym}</span>
           {' · '}
           {theme.copy.creed.expansion}
