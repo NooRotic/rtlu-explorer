@@ -60,6 +60,12 @@ describe('wuTangTheme contract', () => {
     expect(wuTangTheme.copy.about.openLabel).toMatch(/.+/);
   });
 
+  it('carries the C.R.E.A.M. footer creed', () => {
+    const c = wuTangTheme.copy.creed;
+    expect(c.acronym).toBe('C.R.E.A.M.');
+    expect(c.expansion).toMatch(/Code Rules Everything Around Me/);
+  });
+
   it('carries the console-egg content', () => {
     const c = wuTangTheme.console;
     expect(Array.isArray(c.intro)).toBe(true);

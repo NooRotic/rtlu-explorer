@@ -20,6 +20,7 @@ export const copy = {
   stars: { title: "WU-STARS", hint: "most-connected" },
   disclaimer:
     "Unofficial fan tribute. Not affiliated with or endorsed by Wu-Tang Clan.",
+  creed: { acronym: 'C.R.E.A.M.', expansion: 'Code Rules Everything Around Me' },
   about: {
     openLabel: "about",
     heading: "What is this?",
