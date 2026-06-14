@@ -7,7 +7,7 @@ import SearchBox from './SearchBox.jsx';
 // Silver floating dock: the 11 member coins with macOS-style magnify, and a search field that
 // "breathes open" beneath the coins on hover. Members come from the byId map keyed by the roster.
 export default function WuDock({ graph, roster, onSelect }) {
-  const { palette, typography, copy } = useTheme();
+  const { palette } = useTheme();
   const [hovered, setHovered] = useState(null); // coin index under pointer
   const [open, setOpen] = useState(false);      // dock expanded (search visible)
   const [searchFocused, setSearchFocused] = useState(false);
@@ -32,15 +32,19 @@ export default function WuDock({ graph, roster, onSelect }) {
       onMouseLeave={() => { setHovered(null); if (!searchFocused) setOpen(false); }}
       style={{
         position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 6,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-        padding: '10px 16px 12px', borderRadius: 16,
-        background: `linear-gradient(180deg, ${palette.silver}, ${hexA(palette.silverEdge, 0.9)})`,
-        border: `1px solid ${palette.silverEdge}`, boxShadow: '0 8px 28px rgba(0,0,0,0.55)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+        padding: '8px 14px', borderRadius: 16,
+        // glassy: see-through when resting (hover-off), a touch more opaque when open so the
+        // breathe-open search stays legible. backdrop-blur keeps the coins readable over the graph.
+        background: open
+          ? `linear-gradient(180deg, ${hexA(palette.silver, 0.34)}, ${hexA(palette.silverEdge, 0.34)})`
+          : `linear-gradient(180deg, ${hexA(palette.silver, 0.12)}, ${hexA(palette.silverEdge, 0.12)})`,
+        backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+        border: `1px solid ${hexA(palette.silver, open ? 0.5 : 0.28)}`,
+        boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+        transition: 'background 200ms ease, border-color 200ms ease',
       }}
     >
-      <div style={{ fontFamily: typography.data, fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: palette.coinInk, opacity: 0.7 }}>
-        {copy.dock}
-      </div>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
         {members.map((m, i) => (
           <div key={m.id} onMouseEnter={() => setHovered(i)}>

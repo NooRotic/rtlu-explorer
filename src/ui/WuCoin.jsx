@@ -14,7 +14,7 @@ export default function WuCoin({ node, scale = 1, onClick, onHover }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
         background: 'transparent', border: 'none', cursor: 'pointer', padding: 0,
         transform: `scale(${scale})`, transformOrigin: 'bottom center',
-        transition: 'transform 140ms ease-out', width: size + 18,
+        transition: 'transform 140ms ease-out', width: size + 24,
       }}
       title={node.name}
     >
@@ -27,7 +27,9 @@ export default function WuCoin({ node, scale = 1, onClick, onHover }) {
       </span>
       <span style={{
         fontFamily: typography.title, fontSize: 9, color: palette.goldPale, letterSpacing: 0.3,
-        whiteSpace: 'nowrap', maxWidth: size + 16, overflow: 'hidden', textOverflow: 'ellipsis',
+        textAlign: 'center', lineHeight: 1.15, maxWidth: size + 22,
+        // wrap full names onto up to two lines (no more "Wu-Tang Cl…" truncation)
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
       }}>
         {node.name}
       </span>

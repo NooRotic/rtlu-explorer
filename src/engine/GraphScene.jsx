@@ -9,7 +9,7 @@ import { buildNodeObject } from './nodeObject.js';
 import { buildNebula } from './nebulaLayer.js';
 import { buildIslandHalo } from './islandHalo.js';
 
-export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, onSelect, onBuilt }) {
+export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, flyStandoff = 120, onSelect, onBuilt }) {
   const theme = useTheme();
   const fgRef = useRef();
   const focusRef = useRef(focusId); // current focus id (read synchronously by idle-drift)
@@ -101,12 +101,13 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
   ];
   const linkColor = (l) => {
     const w = l.weight ?? 1;
-    const alpha = Math.min(0.85, 0.18 + Math.sqrt(w) * 0.12);
+    // base gold lattice — nudged a touch more visible (0.26 floor, 0.9 cap)
+    const alpha = Math.min(0.9, 0.26 + Math.sqrt(w) * 0.12);
     const [s, t] = ends(l);
     const hs = hoverSetRef.current; // precomputed once per hover
     const fs = focusSetRef.current; // precomputed once per focus change
     const hot = (hs && hs.has(s) && hs.has(t)) || (fs && fs.has(s) && fs.has(t));
-    if (hot) return hexA(theme.palette.whiteHot, 0.95);
+    if (hot) return hexA(theme.palette.whiteHot, 0.72); // slightly translucent so the web reads as light, not a wall
     if (fs) return hexA(theme.palette.gold, 0.04); // selected isolate dims the rest
     return hexA(theme.palette.gold, alpha); // hover (no selection) leaves the rest as gold
   };
@@ -169,7 +170,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
 
   const flyTo = (node) => {
     if (!node || node.x == null) return; // coords not seeded by the sim yet — caller retries
-    const dist = 120;
+    const dist = flyStandoff; // caller controls standoff (e.g. WU-STARS picks land further back)
     const r = Math.hypot(node.x, node.y || 0, node.z || 0) || 1;
     const ratio = 1 + dist / r;
     tweenUntilRef.current = performance.now() + theme.motion.cameraTweenMs;

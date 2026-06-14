@@ -9,11 +9,60 @@
       href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Saira+Stencil+One&family=Special+Elite&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <title>RTLU Explorer</title>
+    <title>Shaolin Observatory — a 3D map of the Wu-Tang universe</title>
     <meta
       name="description"
-      content="A transformative map of the entities and references woven through hip-hop verse. The graph is the work — no lyrics, just the universe behind them."
+      content="An interactive 3D map of the people, places, and references woven through Wu-Tang Clan's verses — built from a knowledge graph, not the lyrics themselves. Explore the cipher."
     />
+    <link rel="canonical" href="https://wu-atlas.nooroticx.tv/" />
+    <meta name="theme-color" content="#070912" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="The Wu-Tang Atlas" />
+    <meta property="og:title" content="Shaolin Observatory — a 3D map of the Wu-Tang universe" />
+    <meta
+      property="og:description"
+      content="An interactive 3D map of the people, places, and references in Wu-Tang Clan's verses — the graph is the work, no lyrics. Explore the cipher."
+    />
+    <meta property="og:url" content="https://wu-atlas.nooroticx.tv/" />
+    <meta property="og:image" content="https://wu-atlas.nooroticx.tv/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Shaolin Observatory — a 3D map of the Wu-Tang universe" />
+    <meta
+      name="twitter:description"
+      content="An interactive 3D map of the people, places, and references in Wu-Tang Clan's verses — no lyrics, just the network behind them."
+    />
+    <meta name="twitter:image" content="https://wu-atlas.nooroticx.tv/og.png" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "Shaolin Observatory",
+            "alternateName": "The Wu-Tang Atlas",
+            "url": "https://wu-atlas.nooroticx.tv/"
+          },
+          {
+            "@type": "CreativeWork",
+            "name": "Shaolin Observatory — a 3D map of the Wu-Tang universe",
+            "url": "https://wu-atlas.nooroticx.tv/",
+            "description": "An interactive 3D map of the people, places, and references woven through Wu-Tang Clan's verses, built from a knowledge graph rather than the lyrics themselves.",
+            "about": { "@type": "MusicGroup", "name": "Wu-Tang Clan" },
+            "author": { "@type": "Person", "name": "NooRotic" },
+            "creditText": "Unofficial fan tribute — not affiliated with Wu-Tang Clan"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
