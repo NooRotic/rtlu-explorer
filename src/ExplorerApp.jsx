@@ -1,5 +1,5 @@
 // src/ExplorerApp.jsx
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ThemeProvider, useTheme } from './theme/ThemeContext.jsx';
 import { wuTangTheme } from './theme/wu-tang/index.js';
 import { useGraphData } from './engine/useGraphData.js';
@@ -11,6 +11,7 @@ import WuDock from './ui/WuDock.jsx';
 import StarsPanel from './ui/StarsPanel.jsx';
 import AboutModal from './ui/AboutModal.jsx';
 import { snapshotStats } from './engine/stats.js';
+import { installConsoleEgg } from './engine/consoleEgg.js';
 
 const ARTIST = 'wu-tang-clan';
 const ISLANDS_KEY = `rtlu.showIslands.${ARTIST}`;
@@ -57,6 +58,19 @@ function Explorer() {
     setAboutOpen(false);
     try { globalThis.localStorage?.setItem(SEEN_KEY, 'true'); } catch { /* ignore */ }
   }, []);
+
+  // Console easter egg: install once when the galaxy is ready, so wu.stats() reflects
+  // live numbers and the banner prints as the universe comes alive.
+  const eggInstalled = useRef(false);
+  useEffect(() => {
+    if (status !== 'ready' || eggInstalled.current) return;
+    eggInstalled.current = true;
+    installConsoleEgg({
+      content: theme.console,
+      stats: snapshotStats(snapshot),
+      accent: theme.palette.gold,
+    });
+  }, [status, snapshot, theme]);
 
   const onBuilt = useCallback((g) => setGraph(g), []);
   // Selecting from the canvas/dock/search closes the stars list (swap) and opens the entity, with
@@ -108,10 +122,16 @@ function Explorer() {
       <AboutModal open={aboutOpen} stats={snapshotStats(snapshot)} onClose={closeAbout} />
 
       <footer style={{
-        position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', zIndex: 4,
-        fontFamily: theme.typography.data, fontSize: 9, color: theme.palette.mute, pointerEvents: 'none',
+        position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center', zIndex: 4,
+        fontFamily: theme.typography.data, fontSize: 9, color: theme.palette.mute,
+        pointerEvents: 'none', lineHeight: 1.5,
       }}>
-        {theme.copy.disclaimer}
+        <div>
+          <span style={{ color: theme.palette.gold, letterSpacing: 1 }}>{theme.copy.creed.acronym}</span>
+          {' · '}
+          {theme.copy.creed.expansion}
+        </div>
+        <div>{theme.copy.disclaimer}</div>
       </footer>
     </div>
   );
