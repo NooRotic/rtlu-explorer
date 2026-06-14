@@ -59,4 +59,19 @@ describe('wuTangTheme contract', () => {
     expect(Array.isArray(a.links)).toBe(true);
     expect(wuTangTheme.copy.about.openLabel).toMatch(/.+/);
   });
+
+  it('carries the console-egg content', () => {
+    const c = wuTangTheme.console;
+    expect(Array.isArray(c.intro)).toBe(true);
+    expect(c.intro.length).toBeGreaterThanOrEqual(3);
+    expect(c.ascii).toMatch(/.+/);
+    expect(Array.isArray(c.aphorisms)).toBe(true);
+    expect(c.aphorisms.length).toBeGreaterThanOrEqual(4);
+    expect(Array.isArray(c.help)).toBe(true);
+    expect(c.help[0]).toHaveProperty('cmd');
+    expect(c.help[0]).toHaveProperty('desc');
+    expect(c.numbersUnits.entities).toMatch(/.+/);
+    expect(c.statsTail).toMatch(/.+/);
+    expect(c.creed).toMatch(/Code Rules/);
+  });
 });
