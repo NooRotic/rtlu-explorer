@@ -83,7 +83,7 @@ function Explorer() {
   // Core selection primitive: isolate `node` (white web + dim + camera), optionally opening the
   // dossier. `node = null` clears the selection (deselect + un-dim) WITHOUT re-framing the camera.
   const isolateNode = useCallback((node, withDossier) => {
-    setStandoff(120);
+    setStandoff(240); // land well back so the node isn't crowding the lens
     setSelected(node);
     setDossierOpen(!!node && withDossier);
     setStarsOpen(false);
@@ -132,6 +132,7 @@ function Explorer() {
         focusId={selected?.id ?? null}
         showIslands={showIslands}
         flyStandoff={standoff}
+        floatPaused={dossierOpen || starsOpen}
         onSelect={select}
         onBuilt={onBuilt}
         onNodeRightClick={openNodeMenu}

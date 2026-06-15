@@ -3,10 +3,13 @@
 // adding Phase-2.5 type-color is "register a strategy", not a rewrite. Strategies are pure
 // functions (node, ctx) => { color, size, glow, opacity }.
 
-const SUN_MIN = 6;   // scene-space radius floor for suns
-const SUN_MAX = 22;  // super-hub ceiling
-const DUST_MIN = 1.4; // raised (was 0.6) so the web reads + dust is catchable
-const DUST_MAX = 5.0; // raised (was 3.2)
+// Global orb shrink to decongest the field without moving any node (layout/framing untouched).
+// Lower = more breathing room between orbs; ~0.6 is about the floor before dust gets hard to catch.
+const ORB_SCALE = 0.70;
+const SUN_MIN = 6 * ORB_SCALE;   // scene-space radius floor for suns
+const SUN_MAX = 22 * ORB_SCALE;  // super-hub ceiling
+const DUST_MIN = 1.4 * ORB_SCALE; // raised (was 0.6) so the web reads + dust is catchable
+const DUST_MAX = 5.0 * ORB_SCALE; // raised (was 3.2)
 const DIM_OPACITY = 0.12;
 const ENLARGE = 1.9;  // how much connected/hovered dust grows when highlighted
 

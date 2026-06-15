@@ -9,11 +9,14 @@ import { buildNodeObject } from './nodeObject.js';
 import { buildNebula } from './nebulaLayer.js';
 import { buildIslandHalo } from './islandHalo.js';
 
-export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, flyStandoff = 120, onSelect, onBuilt, onNodeRightClick, onBackgroundRightClick, flyRequest, resetNonce }) {
+export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, flyStandoff = 120, floatPaused = false, onSelect, onBuilt, onNodeRightClick, onBackgroundRightClick, flyRequest, resetNonce }) {
   const theme = useTheme();
   const fgRef = useRef();
-  const focusRef = useRef(focusId); // current focus id (read synchronously by idle-drift)
-  focusRef.current = focusId;
+  // Idle float pauses while a side panel obstructs the view, not while a node is merely selected —
+  // so closing the dossier (selection persists) resumes the drift. Read synchronously by idle-drift.
+  const floatPausedRef = useRef(floatPaused);
+  floatPausedRef.current = floatPaused;
+  const focusNodeRef = useRef(null); // selected node object — idle float orbits around it (else origin)
   const tweenUntilRef = useRef(0); // suppress idle drift while a camera tween is in flight
   const hoverRef = useRef(null);    // hovered node id
   const hoverSetRef = useRef(null); // hovered node + neighbors — computed ONCE per hover
@@ -69,7 +72,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
     onBuilt?.(graph);
   }, [graph, onBuilt]);
 
-  const encCtx = (hoverSet, focusSet) => ({
+const encCtx = (hoverSet, focusSet) => ({
     theme,
     degree: graph.degree,
     maxCount,
@@ -108,7 +111,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
     const fs = focusSetRef.current; // precomputed once per focus change
     const hot = (hs && hs.has(s) && hs.has(t)) || (fs && fs.has(s) && fs.has(t));
     if (hot) return hexA(theme.palette.whiteHot, 0.72); // slightly translucent so the web reads as light, not a wall
-    if (fs) return hexA(theme.palette.gold, 0.04); // selected isolate dims the rest
+    if (fs) return hexA(theme.palette.gold, 0.38); // selected isolate keeps the rest gold-visible
     return hexA(theme.palette.gold, alpha); // hover (no selection) leaves the rest as gold
   };
   const linkWidth = (l) => Math.min(2.6, 0.3 + Math.sqrt(l.weight ?? 1) * 0.35);
@@ -128,15 +131,19 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
     const tick = () => {
       const t = performance.now() - start;
       update(t);
-      if (theme.motion.idleDrift && !focusRef.current && performance.now() >= tweenUntilRef.current) {
-        // slow idle "breath": rotate the camera orbit very gently
+      if (theme.motion.idleDrift && !floatPausedRef.current && performance.now() >= tweenUntilRef.current) {
+        // slow idle "breath": orbit the camera very gently around the selected node (origin if none)
         const cam = fg.camera();
         const a = theme.motion.idleDrift;
-        const x = cam.position.x * Math.cos(a) - cam.position.z * Math.sin(a);
-        const z = cam.position.x * Math.sin(a) + cam.position.z * Math.cos(a);
-        cam.position.x = x;
-        cam.position.z = z;
-        cam.lookAt(0, 0, 0);
+        const piv = focusNodeRef.current;
+        const px = piv && piv.x != null ? piv.x : 0;
+        const py = piv && piv.y != null ? piv.y : 0;
+        const pz = piv && piv.z != null ? piv.z : 0;
+        const dx = cam.position.x - px;
+        const dz = cam.position.z - pz;
+        cam.position.x = px + dx * Math.cos(a) - dz * Math.sin(a);
+        cam.position.z = pz + dx * Math.sin(a) + dz * Math.cos(a);
+        cam.lookAt(px, py, pz);
       }
       raf = requestAnimationFrame(tick);
     };
@@ -189,12 +196,13 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
   // rather than flying to the origin. (FG 1.x exposes no graphData() getter; visible.nodes holds the
   // same node objects FG mutates with coords in place, so it's the live source.)
   useEffect(() => {
-    if (!focusId) return;
+    if (!focusId) { focusNodeRef.current = null; return; } // deselect → idle float reverts to origin
     let raf;
     let tries = 0;
     const attempt = () => {
       const node = visible.nodes.find((n) => n.id === focusId);
       if (node && node.x != null) {
+        focusNodeRef.current = node; // idle float now orbits this node
         flyTo(node);
         return;
       }
