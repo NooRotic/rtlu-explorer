@@ -9,7 +9,7 @@ import { buildNodeObject } from './nodeObject.js';
 import { buildNebula } from './nebulaLayer.js';
 import { buildIslandHalo } from './islandHalo.js';
 
-export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, flyStandoff = 120, onSelect, onBuilt }) {
+export default function GraphScene({ snapshot, budget, strategy, focusId, showIslands, flyStandoff = 120, onSelect, onBuilt, onNodeRightClick, onBackgroundRightClick, flyRequest, resetNonce }) {
   const theme = useTheme();
   const fgRef = useRef();
   const focusRef = useRef(focusId); // current focus id (read synchronously by idle-drift)
@@ -205,6 +205,22 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId, visible]);
 
+  // Fly the camera to a node WITHOUT selecting it (right-click → "Fly to"). nonce-driven so
+  // repeated picks of the same node re-fly.
+  useEffect(() => {
+    if (!flyRequest?.node) return;
+    flyTo(flyRequest.node);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flyRequest?.nonce]);
+
+  // Reset → ease the camera back to the full overview (zoom-to-fit). Guard idle-drift for the tween.
+  useEffect(() => {
+    if (!resetNonce) return;
+    tweenUntilRef.current = performance.now() + theme.motion.cameraTweenMs;
+    fgRef.current?.zoomToFit?.(theme.motion.cameraTweenMs, 60);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetNonce]);
+
   // Reset the global cursor if we unmount mid-hover.
   useEffect(() => () => { document.body.style.cursor = 'default'; }, []);
 
@@ -229,6 +245,8 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
       onNodeClick={handleNodeClick}
       onNodeHover={handleNodeHover}
       onBackgroundClick={handleBgClick}
+      onNodeRightClick={(node, e) => onNodeRightClick?.(node, e)}
+      onBackgroundRightClick={(e) => onBackgroundRightClick?.(e)}
       warmupTicks={40}
       cooldownTicks={120}
     />
