@@ -12,6 +12,7 @@ import StarsPanel from './ui/StarsPanel.jsx';
 import AboutModal from './ui/AboutModal.jsx';
 import { snapshotStats } from './engine/stats.js';
 import { installConsoleEgg } from './engine/consoleEgg.js';
+import WuMenu from './ui/WuMenu.jsx';
 
 const ARTIST = 'wu-tang-clan';
 const ISLANDS_KEY = `rtlu.showIslands.${ARTIST}`;
@@ -44,6 +45,11 @@ function Explorer() {
   }, [showIslands]);
 
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [dossierOpen, setDossierOpen] = useState(false);
+  const [menu, setMenu] = useState(null);        // { x, y, node } | null
+  const [flyReq, setFlyReq] = useState(null);     // { node, nonce }
+  const [resetNonce, setResetNonce] = useState(0);
+  const flyNonce = useRef(0);
 
   // Auto-open the About modal once, on first visit (only after the snapshot is ready so the numbers
   // are populated). Remember the visit so returning users aren't gated.
@@ -73,19 +79,50 @@ function Explorer() {
   }, [status, snapshot, theme]);
 
   const onBuilt = useCallback((g) => setGraph(g), []);
-  // Selecting from the canvas/dock/search closes the stars list (swap) and opens the entity, with
-  // the normal close-in camera standoff.
-  const select = useCallback((node) => { setStandoff(120); setSelected(node); setStarsOpen(false); }, []);
-  // Selecting from the WU-STARS list lands the camera further back (more context while browsing).
-  const selectFromStars = useCallback((node) => { setStandoff(210); setSelected(node); setStarsOpen(false); }, []);
-  // Opening the stars list closes any open drawer (swap).
+
+  // Core selection primitive: isolate `node` (white web + dim + camera), optionally opening the
+  // dossier. `node = null` clears the selection (deselect + un-dim) WITHOUT re-framing the camera.
+  const isolateNode = useCallback((node, withDossier) => {
+    setStandoff(120);
+    setSelected(node);
+    setDossierOpen(!!node && withDossier);
+    setStarsOpen(false);
+  }, []);
+  // Canvas/dock/search select → full experience (isolate + dossier open).
+  const select = useCallback((node) => isolateNode(node, true), [isolateNode]);
+  // WU-STARS pick: land the camera further back, dossier open.
+  const selectFromStars = useCallback((node) => { setStandoff(210); setSelected(node); setDossierOpen(true); setStarsOpen(false); }, []);
   const toggleStars = useCallback(() => { setStarsOpen((o) => { if (!o) setSelected(null); return !o; }); }, []);
+
+  // Close the dossier sidebar WITHOUT deselecting — the white web persists.
+  const closeDossier = useCallback(() => setDossierOpen(false), []);
+
+  // Full reset to a fresh float: clear selection + dossier, close the menu, re-frame the camera.
+  const reset = useCallback(() => {
+    setSelected(null);
+    setDossierOpen(false);
+    setMenu(null);
+    setResetNonce((n) => n + 1);
+  }, []);
+
+  // Right-click → open the wu-menu at the cursor (node = target, or null for background).
+  const openNodeMenu = useCallback((node, e) => { e?.preventDefault?.(); setMenu({ x: e.clientX, y: e.clientY, node }); }, []);
+  const openBgMenu = useCallback((e) => { e?.preventDefault?.(); setMenu({ x: e.clientX, y: e.clientY, node: null }); }, []);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const onMenuAction = useCallback((id, node) => {
+    if (id === 'reset') { reset(); return; }
+    if (!node) return;
+    if (id === 'isolate') isolateNode(node, false);        // visual web only, no sidebar
+    else if (id === 'dossier') isolateNode(node, true);     // isolate + sidebar (= left-click)
+    else if (id === 'fly') setFlyReq({ node, nonce: (flyNonce.current += 1) }); // camera only, no select
+    else if (id === 'copy') { try { navigator.clipboard?.writeText(node.name); } catch { /* ignore */ } }
+  }, [reset, isolateNode]);
 
   if (status === 'loading') return <Centered theme={theme}>Loading the universe…</Centered>;
   if (status === 'error') return <Centered theme={theme}>Could not load the snapshot: {error}</Centered>;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: theme.palette.bgBase }}>
+    <div onContextMenu={(e) => e.preventDefault()} style={{ position: 'fixed', inset: 0, background: theme.palette.bgBase }}>
       <Title theme={theme} />
 
       <GraphScene
@@ -97,12 +134,29 @@ function Explorer() {
         flyStandoff={standoff}
         onSelect={select}
         onBuilt={onBuilt}
+        onNodeRightClick={openNodeMenu}
+        onBackgroundRightClick={openBgMenu}
+        flyRequest={flyReq}
+        resetNonce={resetNonce}
       />
 
       {/* Top-left control cluster: budget slider + islands toggle, under the title */}
       <div style={{ position: 'absolute', top: 86, left: 18, zIndex: 5, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <BudgetSlider value={budget} total={total} onChange={setBudget} />
         <IslandsToggle theme={theme} on={showIslands} onChange={setShowIslands} />
+        {selected && (
+          <button
+            onClick={reset}
+            style={{
+              alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+              background: 'transparent', border: 'none', padding: '2px 0',
+              fontFamily: theme.typography.data, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase',
+              color: theme.palette.mute,
+            }}
+          >
+            <span style={{ color: theme.palette.gold }}>⊗</span> reset
+          </button>
+        )}
         <button
           onClick={() => setAboutOpen(true)}
           style={{
@@ -118,8 +172,9 @@ function Explorer() {
 
       <StarsPanel graph={graph} open={starsOpen} onToggle={toggleStars} onPick={selectFromStars} />
       <WuDock graph={graph} roster={theme.suns.roster} onSelect={select} />
-      <Drawer node={selected} graph={graph} onClose={() => setSelected(null)} />
+      <Drawer node={dossierOpen ? selected : null} graph={graph} onClose={closeDossier} />
       <AboutModal open={aboutOpen} stats={snapshotStats(snapshot)} onClose={closeAbout} />
+      <WuMenu menu={menu} onAction={onMenuAction} onClose={closeMenu} />
 
       <footer style={{
         position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center', zIndex: 4,
