@@ -92,7 +92,7 @@ function Explorer() {
   const select = useCallback((node) => isolateNode(node, true), [isolateNode]);
   // WU-STARS pick: land the camera further back, dossier open.
   const selectFromStars = useCallback((node) => { setStandoff(210); setSelected(node); setDossierOpen(true); setStarsOpen(false); }, []);
-  const toggleStars = useCallback(() => { setStarsOpen((o) => { if (!o) setSelected(null); return !o; }); }, []);
+  const toggleStars = useCallback(() => { setStarsOpen((o) => { if (!o) { setSelected(null); setDossierOpen(false); } return !o; }); }, []);
 
   // Close the dossier sidebar WITHOUT deselecting — the white web persists.
   const closeDossier = useCallback(() => setDossierOpen(false), []);
@@ -106,8 +106,8 @@ function Explorer() {
   }, []);
 
   // Right-click → open the wu-menu at the cursor (node = target, or null for background).
-  const openNodeMenu = useCallback((node, e) => { e?.preventDefault?.(); setMenu({ x: e.clientX, y: e.clientY, node }); }, []);
-  const openBgMenu = useCallback((e) => { e?.preventDefault?.(); setMenu({ x: e.clientX, y: e.clientY, node: null }); }, []);
+  const openNodeMenu = useCallback((node, e) => { e?.preventDefault?.(); setMenu({ x: e?.clientX ?? 0, y: e?.clientY ?? 0, node }); }, []);
+  const openBgMenu = useCallback((e) => { e?.preventDefault?.(); setMenu({ x: e?.clientX ?? 0, y: e?.clientY ?? 0, node: null }); }, []);
   const closeMenu = useCallback(() => setMenu(null), []);
   const onMenuAction = useCallback((id, node) => {
     if (id === 'reset') { reset(); return; }
@@ -154,7 +154,7 @@ function Explorer() {
               color: theme.palette.mute,
             }}
           >
-            <span style={{ color: theme.palette.gold }}>⊗</span> reset
+            <span aria-hidden="true" style={{ color: theme.palette.gold }}>⊗</span> reset
           </button>
         )}
         <button
