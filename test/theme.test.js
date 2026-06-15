@@ -59,4 +59,26 @@ describe('wuTangTheme contract', () => {
     expect(Array.isArray(a.links)).toBe(true);
     expect(wuTangTheme.copy.about.openLabel).toMatch(/.+/);
   });
+
+  it('carries the C.R.E.A.M. footer creed', () => {
+    const c = wuTangTheme.copy.creed;
+    expect(c.acronym).toBe('C.R.E.A.M.');
+    expect(c.expansion).toMatch(/Code Rules Everything Around Me/);
+  });
+
+  it('carries the console-egg content', () => {
+    const c = wuTangTheme.console;
+    expect(c.title).toMatch(/.+/);
+    expect(Array.isArray(c.intro)).toBe(true);
+    expect(c.intro.length).toBeGreaterThanOrEqual(3);
+    expect(c.ascii).toMatch(/.+/);
+    expect(Array.isArray(c.aphorisms)).toBe(true);
+    expect(c.aphorisms.length).toBeGreaterThanOrEqual(4);
+    expect(Array.isArray(c.help)).toBe(true);
+    expect(c.help[0]).toHaveProperty('cmd');
+    expect(c.help[0]).toHaveProperty('desc');
+    expect(c.numbersUnits.entities).toMatch(/.+/);
+    expect(c.statsTail).toMatch(/.+/);
+    expect(c.creed).toMatch(/Code Rules/);
+  });
 });
