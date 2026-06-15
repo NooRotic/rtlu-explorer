@@ -31,7 +31,7 @@ export default function WuDock({ graph, roster, onSelect }) {
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => { setHovered(null); if (!searchFocused) setOpen(false); }}
       style={{
-        position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 6,
+        position: 'absolute', bottom: 38, left: '50%', transform: 'translateX(-50%)', zIndex: 6,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         padding: '8px 14px', borderRadius: 16,
         // glassy: see-through when resting (hover-off), a touch more opaque when open so the

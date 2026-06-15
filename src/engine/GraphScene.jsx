@@ -244,6 +244,7 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
       linkWidth={linkWidth}
       linkOpacity={1}
       enableNodeDrag={false}
+      showNavInfo={false}
       onNodeClick={handleNodeClick}
       onNodeHover={handleNodeHover}
       onBackgroundClick={handleBgClick}
