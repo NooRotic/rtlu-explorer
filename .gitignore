@@ -10,6 +10,9 @@ dist-ssr
 # Brainstorm visual-companion scratch (mockups, server state)
 .superpowers/
 
+# Internal planning artifacts — kept local, not published
+docs/superpowers/
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

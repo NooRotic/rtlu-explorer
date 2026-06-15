@@ -1,11 +1,7 @@
 # RTLU Explorer
 
 The public, static front-end for the **Rip The Lyrical Universe** project — a
-transformative 3D map of the entities and references woven through hip-hop verse.
 
-**The graph is the work. There are no lyrics here.** Every artifact this site
-loads is an entity/relationship snapshot exported from a local, private
-Hindsight knowledge graph. Lyrics are copyrighted; the network of people,
 places, and references *about* them is transformative work, and that is all
 this site ever ships.
 
