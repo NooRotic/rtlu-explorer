@@ -1,6 +1,7 @@
 // src/ui/AboutModal.jsx
 import { useEffect } from 'react';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import './AboutModal.css';
 
 // Re-openable welcome/about dialog. Prose comes from theme.copy.about; numbers are live (from props).
 export default function AboutModal({ open, stats, onClose }) {
@@ -27,12 +28,12 @@ export default function AboutModal({ open, stats, onClose }) {
     >
       <div
         role="dialog" aria-modal="true" aria-label={a.heading}
+        className="about-panel"
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 'min(560px, 92vw)', maxHeight: '86vh', overflowY: 'auto',
           background: 'linear-gradient(180deg, rgba(9,12,20,0.98), rgba(4,5,10,0.99))',
-          border: `1px solid ${hexA(palette.gold, 0.35)}`, borderRadius: 14,
-          padding: '26px 26px 22px', position: 'relative', boxShadow: '0 18px 60px rgba(0,0,0,0.6)',
+          border: `1px solid ${hexA(palette.gold, 0.35)}`,
+          position: 'relative', boxShadow: '0 18px 60px rgba(0,0,0,0.6)',
         }}
       >
         <button
@@ -43,7 +44,7 @@ export default function AboutModal({ open, stats, onClose }) {
         <div style={{ fontFamily: typography.data, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: palette.gold }}>
           {copy.title}
         </div>
-        <h2 style={{ fontFamily: typography.title, fontSize: 26, color: palette.goldPale, margin: '4px 0 16px', lineHeight: 1.1 }}>
+        <h2 style={{ fontFamily: typography.title, fontSize: 'clamp(22px, 6.5vw, 26px)', color: palette.goldPale, margin: '4px 0 16px', lineHeight: 1.1 }}>
           {a.heading}
         </h2>
 
