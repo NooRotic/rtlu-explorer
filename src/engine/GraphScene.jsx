@@ -206,7 +206,9 @@ export default function GraphScene({ snapshot, budget, strategy, focusId, showIs
   }, [focusId, visible]);
 
   // Fly the camera to a node WITHOUT selecting it (right-click → "Fly to"). nonce-driven so
-  // repeated picks of the same node re-fly.
+  // repeated picks of the same node re-fly. Precondition: callers pass a *rendered* node (the
+  // right-click target is always in `visible`, so its coords are seeded) — flyTo() no-ops on a
+  // coord-less node, so out-of-budget targets would silently not move (acceptable here).
   useEffect(() => {
     if (!flyRequest?.node) return;
     flyTo(flyRequest.node);
