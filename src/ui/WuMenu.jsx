@@ -21,17 +21,17 @@ export default function WuMenu({ menu, onAction, onClose }) {
   if (!menu) return null;
   const items = menuItemsFor(menu.node);
   const left = Math.max(8, Math.min(menu.x, window.innerWidth - MENU_W - 8));
-  const top = Math.max(8, Math.min(menu.y, window.innerHeight - items.length * ROW_H - 24));
+  const top = Math.max(8, Math.min(menu.y, window.innerHeight - items.length * ROW_H - 32));
   const header = menu.node ? menu.node.name : 'view';
 
   return (
     <div
-      onClick={onClose}
+      onClick={() => onClose?.()}
       onContextMenu={(e) => { e.preventDefault(); onClose?.(); }}
       style={{ position: 'fixed', inset: 0, zIndex: 30 }}
     >
       <div
-        role="menu"
+        role="menu" aria-label={header}
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'fixed', left, top, width: MENU_W,
@@ -41,7 +41,7 @@ export default function WuMenu({ menu, onAction, onClose }) {
           padding: 4, fontFamily: typography.data,
         }}
       >
-        <div style={{
+        <div title={header} style={{
           fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: palette.gold,
           padding: '6px 10px 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
