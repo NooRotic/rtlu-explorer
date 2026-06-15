@@ -10,7 +10,7 @@ export default function Drawer({ node, graph, onClose }) {
   return (
     <aside
       style={{
-        position: 'absolute', top: 0, right: 0, height: '100%', width: 340, zIndex: 6,
+        position: 'absolute', top: 0, right: 0, height: '100%', width: 340, zIndex: 8,
         background: 'linear-gradient(180deg, rgba(7,9,18,0.96), rgba(4,5,10,0.98))',
         borderLeft: `1px solid ${hexA(palette.gold, 0.3)}`, padding: '26px 24px', overflowY: 'auto',
       }}
