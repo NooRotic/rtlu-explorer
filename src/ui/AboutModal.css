@@ -1,0 +1,46 @@
+/* About modal — styled scrollbar + mobile-safe sizing.
+   These can't live in inline styles: ::-webkit-scrollbar pseudo-elements, the
+   Firefox scrollbar-color, the dvh fallback (two declarations), and the small-
+   screen @media query. Theme COLOURS (gold #E8B306 on the void) are mirrored here
+   from palette.js; the gradient/border stay inline in AboutModal.jsx. */
+
+.about-panel {
+  width: min(560px, 92vw);
+  max-height: 86vh;   /* fallback for browsers without dvh */
+  max-height: 86dvh;  /* mobile: excludes the address-bar chrome so the panel + × stay on-screen */
+  overflow-y: auto;
+  overflow-x: hidden; /* never let a long name spill past the rounded edge */
+  border-radius: 14px;
+  padding: 26px 26px 22px;
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 179, 6, 0.45) transparent;
+}
+
+/* Long unbreakable strings (urls, names) wrap instead of clipping. min-width:0
+   lets flex/grid children actually shrink below their content size on mobile. */
+.about-panel,
+.about-panel h2,
+.about-panel h3,
+.about-panel p,
+.about-panel section {
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+/* WebKit / Blink (Chrome, Safari, Edge) — gold thumb on a transparent track */
+.about-panel::-webkit-scrollbar { width: 9px; }
+.about-panel::-webkit-scrollbar-track { background: transparent; margin: 8px 0; }
+.about-panel::-webkit-scrollbar-thumb {
+  background: rgba(232, 179, 6, 0.32);
+  border-radius: 8px;
+  border: 2px solid transparent; /* inset the thumb a touch */
+  background-clip: padding-box;
+}
+.about-panel::-webkit-scrollbar-thumb:hover { background: rgba(232, 179, 6, 0.6); }
+
+/* Tighter chrome on phones */
+@media (max-width: 480px) {
+  .about-panel { padding: 20px 16px 18px; border-radius: 12px; }
+}
